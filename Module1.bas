@@ -41,33 +41,68 @@ End Type
 
 ' custom struct, for data output
 Type GetEXEWordSize_out
-    ' https://stackoverflow.com/a/4875294/12258312
-    ' https://stackoverflow.com/a/4876841/12258312
-    Size As Byte
+ input As String
+ time As String
+ 
+ ' https://stackoverflow.com/a/4875294/12258312
+ ' https://stackoverflow.com/a/4876841/12258312
+ wordsize As Byte
     
-    Cause As String
-    Desc As String * 512
+ walkthrough As String
+ 
+ desc As String * 80
 End Type
 
-Function GetEXEWordSize_ToString(dat As GetEXEWordSize_out) As String
-    Dim buf As String
-    
-    ' format is kinda like zfill,
-    ' https://bytes.com/topic/visual-basic/answers/778694-how-format-number-0000-a
-    
-    buf = nzfill(dat.Size, 3)
-    buf = buf + IIf(Asc(dat.Cause) <> 0, ":" + dat.Cause, "")
-    
-    ' https://docs.microsoft.com/en-us/office/vba/language/reference/user-interface-help/ltrim-rtrim-and-trim-functions
-    buf = buf + IIf(Asc(dat.Desc) <> 0, "-> " + Trim(dat.Desc), "")
-    
-    GetEXEWordSize_ToString = buf
+Function GetEXEWordSize_ToJson(dat As GetEXEWordSize_out) As String
+ ' Its sure rudimental,
+ ' but it works!
+ 
+ Dim C34 As String * 1
+ C34 = Chr(34)
+ 
+ Dim C34P As String
+ C34P = C34 + ": " + C34
+ 
+ Dim buf As String
+ With dat
+  .walkthrough = .walkthrough + "walk!"
+ 
+  buf = "{" + vbCrLf
+  buf = buf + String(1, vbTab) + C34 + App.Title + C34 + ":{" + vbCrLf
+  
+  ' input + time
+  buf = buf + String(2, vbTab) + C34 + "input" + C34P + .input + C34 + vbCrLf
+  buf = buf + String(2, vbTab) + C34 + "time" + C34P + .time + C34 + vbCrLf
+  
+  ' wordsize
+  buf = buf + String(2, vbTab) + C34 + "wordsize" + C34P
+  buf = buf + zfill_byte(.wordsize, 3) + C34 + vbCrLf
+  
+  ' desc
+  buf = buf + String(2, vbTab) + C34 + "desc" + C34P
+  ' https://docs.microsoft.com/en-us/office/vba/language/reference/user-interface-help/ltrim-rtrim-and-trim-functions
+  buf = buf + IIf(Asc(.desc), Trim(.desc), "") + C34 + vbCrLf
+     
+  ' walkthrough
+  buf = buf + String(2, vbTab) + C34 + "walkthrough" + C34P
+  buf = buf + IIf(Asc(.walkthrough), .walkthrough, "") + C34 + vbCrLf
+  
+  ' end item
+  buf = buf + String(1, vbTab) + "}" + vbCrLf
+  
+  ' end json
+  buf = buf + "}" + vbCrLf
+  
+  GetEXEWordSize_ToJson = buf
+ End With
 End Function
 
-Function nzfill(i As Byte, n As Byte) As String
+Function zfill_byte(i As Byte, n As Byte) As String
+ ' format is kinda like zfill,
+ ' https://bytes.com/topic/visual-basic/answers/778694-how-format-number-0000-a
  Dim buf As String
  buf = String(n, "0")
- nzfill = Format(i, buf)
+ zfill_byte = Format(i, buf)
 End Function
 
 Function str2hexarray(s As String, Optional delim As String = " ") As String
@@ -88,11 +123,19 @@ Function read_binary_file(path As String, Optional l As Integer = 2) As Byte()
     
     Open path For Binary Access Read As nFile Len = l
     If LOF(nFile) > 0 Then
-        read_binary_file = Input(LOF(nFile), nFile)
+        read_binary_file = input(LOF(nFile), nFile)
         'ReDim read_binary_file(0 To LOF(nFile) - 1)
         'Get nFile, , read_binary_file
     End If
     Close nFile
+End Function
+
+Function GetEXEWordSize_prefill(s As GetEXEWordSize_out, AppPath As String)
+ With s
+  .walkthrough = "rdy|"
+  .input = AppPath
+  .time = Now
+ End With
 End Function
 
 Function GetEXEWordSize(AppPath As String, Optional maxRdLen As Integer = 8192) As GetEXEWordSize_out
@@ -119,12 +162,13 @@ Function GetEXEWordSize(AppPath As String, Optional maxRdLen As Integer = 8192) 
  SIGN64 = Chr(100) + Chr(134)
  
  Dim ret As GetEXEWordSize_out
+ GetEXEWordSize_prefill ret, AppPath
  
  lngResult = SHGetFileInfo(AppPath, 0, SHFI, Len(SHFI), &H2000)
   
  If lngResult = 0 Then ' If EXE cannot be read
-  ret.Size = 0
-  ret.Cause = ret.Cause + "lng-|"
+  ret.wordsize = 0
+  ret.walkthrough = ret.walkthrough + "SHGetFileInfo=BAD|"
   
   Dim pe_buf As String
   pe_buf = read_binary_file(AppPath, maxRdLen)
@@ -147,22 +191,22 @@ Function GetEXEWordSize(AppPath As String, Optional maxRdLen As Integer = 8192) 
    pe_nextbytes = Mid(pe_buf, pe_pos + Len(PE_HEADER), 2)
    If (Len(pe_nextbytes)) Then
     If (StrComp(pe_nextbytes, SIGN32, vbBinaryCompare) = 0) Then
-     ret.Size = 32 '
-     ret.Cause = ret.Cause + "Sign32|"
+     ret.wordsize = 32 '
+     ret.walkthrough = ret.walkthrough + "Sign32|"
     ElseIf (StrComp(pe_nextbytes, SIGN64, vbBinaryCompare) = 0) Then
-     ret.Size = 64 '
-     ret.Cause = ret.Cause + "Sign64|"
+     ret.wordsize = 64 '
+     ret.walkthrough = ret.walkthrough + "Sign64|"
     Else
-     ret.Size = 0 '
-     ret.Cause = ret.Cause + "Sign?? (" + str2hexarray(Mid(pe_buf, pe_pos, 10)) + ") @ " + Hex(pe_pos) + "|"
+     ret.wordsize = 0 '
+     ret.walkthrough = ret.walkthrough + "Sign?? (" + str2hexarray(Mid(pe_buf, pe_pos, 10)) + ") @ " + Hex(pe_pos) + "|"
     End If
    End If
   Else
-   ret.Size = 0 ' prefill
-   ret.Cause = ret.Cause + "NonPE/NonExecutable?|"
-  End If ' If (pe_pos > 0) Then
+   ret.wordsize = 0 ' prefill
+   ret.walkthrough = ret.walkthrough + "NonPE/NonExecutable?|"
+  End If ' If (pe_pos > 0) ...
  Else ' if can be read
-  ret.Cause = ret.Cause + "lng+|"
+  ret.walkthrough = ret.walkthrough + "SHGetFileInfo=OK|"
 
   
     intLoWord = lngResult And &HFFFF&
@@ -172,65 +216,65 @@ Function GetEXEWordSize(AppPath As String, Optional maxRdLen As Integer = 8192) 
      
     Select Case strLOWORD
      Case "NE", "MZ" ' as far as I can tell,  both NE and MZ are 16bit
-      ret.Size = 16
-      ret.Cause = ret.Cause + "LOWORD:NEMZ|"
+      ret.wordsize = 16
+      ret.walkthrough = ret.walkthrough + "LOWORD:NEMZ|"
      Case "PE" ' If PE app, gather OS info
-      ret.Cause = ret.Cause + "LOWORD:PE|"
+      ret.walkthrough = ret.walkthrough + "LOWORD:PE|"
       Dim OSV As OSVERSIONINFO
       With OSV
        .OSVSize = Len(OSV)
        GetVersionEx OSV
        If .PlatformID < 2 Then ' If PE app and Win 9x
-        ret.Size = 32
-        ret.Cause = ret.Cause + "PE&Win9x|"
+        ret.wordsize = 32
+        ret.walkthrough = ret.walkthrough + "PE&Win9x|"
        ElseIf .dwVerMajor >= 4 Then ' If PE app and Win NT or higher
-         ret.Cause = ret.Cause + "PE&WinNT4|"
+         ret.walkthrough = ret.walkthrough + "PE&WinNT4|"
          ' Get info via GetBinaryType
          Dim BinaryType As Long
          GetBinaryType AppPath, BinaryType
          Select Case BinaryType
           Case 0 'SCS_32BIT_BINARY
            ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
-           ret.Desc = " A 32-bit Windows-based application "
-           ret.Cause = ret.Cause + "SCS_32BIT_BINARY|"
-           ret.Size = 32
+           ret.desc = " A 32-bit Windows-based application "
+           ret.walkthrough = ret.walkthrough + "SCS_32BIT_BINARY|"
+           ret.wordsize = 32
           Case 1 'SCS_DOS_BINARY
            ' https://users.cs.jmu.edu/abzugcx/Public/Student-Produced-Term-Projects/Operating-Systems-2003-FALL/MS-DOS-by-Dominic-Swayne-Fall-2003.pdf
            ' First known as 86-DOS, it was developed in about 6 weeks by Tim Paterson of Seattle Computer Products (SCP).  The OS was designed to operate on the company’s own 16-bit personal computers running the Intel 8086 microprocessor.  (Paterson, 1983a)
-           ret.Cause = ret.Cause + "SCS_DOS_BINARY|"
-           ret.Size = 16
+           ret.walkthrough = ret.walkthrough + "SCS_DOS_BINARY|"
+           ret.wordsize = 16
           Case 2 'SCS_WOW_BINARY
            ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
-           ret.Desc = "A 16-bit Windows-based application"
-           ret.Cause = ret.Cause + "SCS_WOW_BINARY|"
-           ret.Size = 16
+           ret.desc = "A 16-bit Windows-based application"
+           ret.walkthrough = ret.walkthrough + "SCS_WOW_BINARY|"
+           ret.wordsize = 16
           Case 3 'SCS_PIF_BINARY
            ' https://users.cs.jmu.edu/abzugcx/Public/Student-Produced-Term-Projects/Operating-Systems-2003-FALL/MS-DOS-by-Dominic-Swayne-Fall-2003.pdf
            ' First known as 86-DOS, it was developed in about 6 weeks by Tim Paterson of Seattle Computer Products (SCP).  The OS was designed to operate on the company’s own 16-bit personal computers running the Intel 8086 microprocessor.  (Paterson, 1983a)
-           ret.Desc = " A PIF file that executes an MS-DOS – based application "
-           ret.Cause = ret.Cause + "SCS_PIF_BINARY|"
-           ret.Size = 16
+           ret.desc = " A PIF file that executes an MS-DOS – based application "
+           ret.walkthrough = ret.walkthrough + "SCS_PIF_BINARY|"
+           ret.wordsize = 16
           Case 4 'SCS_POSIX_BINARY
            ' https://en.wikipedia.org/wiki/Program_information_file
            ' ...
            ' https://stackoverflow.com/q/58986468
-           ret.Cause = ret.Cause + "SCS_POSIX_BINARY|"
-           ret.Size = 16 ' Posix word size unknown
+           ret.walkthrough = ret.walkthrough + "SCS_POSIX_BINARY|"
+           ret.wordsize = 16 ' Posix word wordsize unknown
           Case 5 'SCS_OS216_BINARY
            ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
-           ret.Desc = " A 16-bit OS/2-based application "
-           ret.Cause = ret.Cause + "SCS_OS216_BINARY|"
-           ret.Size = 16
+           ret.desc = " A 16-bit OS/2-based application "
+           ret.walkthrough = ret.walkthrough + "SCS_OS216_BINARY|"
+           ret.wordsize = 16
           Case 6 'SCS_64BIT_BINARY
            ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
-           ret.Desc = " A 64-bit Windows-based application. "
-           ret.Cause = ret.Cause + "SCS_64BIT_BINARY|"
-           ret.Size = 64
+           ret.desc = " A 64-bit Windows-based application. "
+           ret.walkthrough = ret.walkthrough + "SCS_64BIT_BINARY|"
+           ret.wordsize = 64
          End Select
        Else ' However, if we have, say, Windows NT 3.51, then
         ' WinNT is designed for 32 bits
-        ret.Cause = ret.Cause + "PE&WinNT3.51|"
-        ret.Size = 32
+        ret.walkthrough = ret.walkthrough + "PE&WinNT3.51|"
+        ret.wordsize = 32
        End If
       End With
     End Select

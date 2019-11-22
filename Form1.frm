@@ -2,14 +2,14 @@ VERSION 5.00
 Begin VB.Form Form1 
    BorderStyle     =   1  'Fixed Single
    Caption         =   "Form1"
-   ClientHeight    =   5520
+   ClientHeight    =   9150
    ClientLeft      =   45
    ClientTop       =   435
    ClientWidth     =   5910
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    MinButton       =   0   'False
-   ScaleHeight     =   5520
+   ScaleHeight     =   9150
    ScaleWidth      =   5910
    StartUpPosition =   3  'Windows Default
    Begin VB.TextBox Text2 
@@ -56,11 +56,11 @@ Begin VB.Form Form1
          Italic          =   0   'False
          Strikethrough   =   0   'False
       EndProperty
-      Height          =   975
+      Height          =   4455
       Left            =   240
       TabIndex        =   4
       Top             =   4440
-      Width           =   5535
+      Width           =   5415
    End
    Begin VB.Label Label3 
       Caption         =   "Output (result):"
@@ -126,7 +126,7 @@ Private Sub Command1_Click()
 
     Beep
     dat = Module1.GetEXEWordSize(Text1.Text)
-    Label4.Caption = GetEXEWordSize_ToString(dat)
+    Label4.Caption = GetEXEWordSize_ToJson(dat)
 End Sub
 
 Private Sub Form_Load()
