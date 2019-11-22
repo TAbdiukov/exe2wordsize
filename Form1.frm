@@ -2,15 +2,15 @@ VERSION 5.00
 Begin VB.Form Form1 
    BorderStyle     =   1  'Fixed Single
    Caption         =   "Form1"
-   ClientHeight    =   5490
+   ClientHeight    =   5520
    ClientLeft      =   45
    ClientTop       =   435
-   ClientWidth     =   16950
+   ClientWidth     =   5910
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    MinButton       =   0   'False
-   ScaleHeight     =   5490
-   ScaleWidth      =   16950
+   ScaleHeight     =   5520
+   ScaleWidth      =   5910
    StartUpPosition =   3  'Windows Default
    Begin VB.TextBox Text2 
       Height          =   5295

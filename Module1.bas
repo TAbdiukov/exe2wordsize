@@ -56,10 +56,10 @@ Function GetEXEWordSize_ToString(dat As GetEXEWordSize_out) As String
     ' https://bytes.com/topic/visual-basic/answers/778694-how-format-number-0000-a
     
     buf = nzfill(dat.Size, 3)
-    buf = buf + IIf(Len(dat.Cause), ":" + dat.Cause, "")
+    buf = buf + IIf(Asc(dat.Cause) <> 0, ":" + dat.Cause, "")
     
     ' https://docs.microsoft.com/en-us/office/vba/language/reference/user-interface-help/ltrim-rtrim-and-trim-functions
-    buf = buf + IIf(Len(dat.Desc), "-> " + Trim(dat.Desc), "")
+    buf = buf + IIf(Asc(dat.Desc) <> 0, "-> " + Trim(dat.Desc), "")
     
     GetEXEWordSize_ToString = buf
 End Function
@@ -122,7 +122,7 @@ Function GetEXEWordSize(AppPath As String, Optional maxRdLen As Integer = 8192) 
  
  lngResult = SHGetFileInfo(AppPath, 0, SHFI, Len(SHFI), &H2000)
   
- If 1 Then 'lngResult = 0 Then ' If EXE cannot be read
+ If lngResult = 0 Then ' If EXE cannot be read
   ret.Size = 0
   ret.Cause = ret.Cause + "lng-|"
   
