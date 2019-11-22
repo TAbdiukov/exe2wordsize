@@ -5,13 +5,21 @@ Begin VB.Form Form1
    ClientHeight    =   5490
    ClientLeft      =   45
    ClientTop       =   435
-   ClientWidth     =   5880
+   ClientWidth     =   16950
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    MinButton       =   0   'False
    ScaleHeight     =   5490
-   ScaleWidth      =   5880
+   ScaleWidth      =   16950
    StartUpPosition =   3  'Windows Default
+   Begin VB.TextBox Text2 
+      Height          =   5295
+      Left            =   6000
+      TabIndex        =   6
+      Text            =   "Text2"
+      Top             =   120
+      Width           =   10815
+   End
    Begin VB.CommandButton Command1 
       Caption         =   "Try Me!"
       BeginProperty Font 
@@ -125,7 +133,7 @@ Private Sub Form_Load()
     Dim mypath As String
 
     ' https://stackoverflow.com/a/12423852/12258312
-    mypath = App.Path & IIf(Right$(App.Path, 1) <> "\", "\", "") & App.EXEName & ".exe"
+    mypath = App.path & IIf(Right$(App.path, 1) <> "\", "\", "") & App.EXEName & ".exe"
     Text1.Text = mypath
 End Sub
  
