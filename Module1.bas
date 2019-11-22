@@ -10,6 +10,7 @@ Declare Function GetVersionEx Lib "kernel32" Alias "GetVersionExA" (lpVersionInf
 ' Used by: GetEXEWordSize
 Declare Function SHGetFileInfo Lib "shell32.dll" Alias "SHGetFileInfoA" (ByVal pszPath As String, ByVal dwFileAttributes As Long, psfi As SHFILEINFO, ByVal cbFileInfo As Long, ByVal uFlags As Long) As Long
  
+' Deprecated, but let it be for now
 Type EXE
  Caption As String
  Handle As Long
@@ -20,6 +21,7 @@ Type EXE
  PID As Long
 End Type
  
+' for OS info
 Type OSVERSIONINFO
  OSVSize         As Long
  dwVerMajor      As Long
@@ -37,7 +39,19 @@ Type SHFILEINFO
  szTypeName As String * 80 ' out: type name
 End Type
 
-Function GetEXEWordSize(AppPath As String) As Byte
+' custom struct, for data output
+Type GetEXEWordSize_out
+    Size As Byte
+    Cause As String
+End Type
+
+Function GetEXEWordSize_ToString(dat As GetEXEWordSize_out) As String
+    ' format is kinda like zfill,
+    ' https://bytes.com/topic/visual-basic/answers/778694-how-format-number-0000-a
+    GetEXEWordSize_ToString = Format(dat.Size, "000") + ":" + dat.Cause
+End Function
+
+Function GetEXEWordSize(AppPath As String) As GetEXEWordSize_out
  'Try gathering info thru ShGetFileInfo first
  Dim SHFI As SHFILEINFO
  Dim lngResult   As Long
@@ -46,11 +60,17 @@ Function GetEXEWordSize(AppPath As String) As Byte
  Dim intLoWordLoByte As Integer
  Dim strLOWORD   As String
  
+ Dim ret As GetEXEWordSize_out
+ 
  lngResult = SHGetFileInfo(AppPath, 0, SHFI, Len(SHFI), &H2000)
   
  If lngResult = 0 Then ' If EXE cannot be read
-  GetEXEWordSize = 0 ' TODO
+  ret.Size = 0 ' TODO
+  ret.Cause = ret.Cause + "lng-|"
+  GetEXEWordSize = ret
   Exit Function
+ Else
+  ret.Cause = ret.Cause + "lng+|"
  End If
   
  intLoWord = lngResult And &HFFFF&
@@ -60,40 +80,55 @@ Function GetEXEWordSize(AppPath As String) As Byte
   
  Select Case strLOWORD
   Case "NE", "MZ" ' as far as I can tell,  both NE and MZ are 16bit
-   GetEXEWordSize = 2
+   ret.Size = 16
+   ret.Cause = ret.Cause + "LOWORD:NEMZ|"
   Case "PE" ' If PE app, gather OS info
+  ret.Cause = ret.Cause + "LOWORD:PE|"
    Dim OSV As OSVERSIONINFO
    With OSV
     .OSVSize = Len(OSV)
     GetVersionEx OSV
     If .PlatformID < 2 Then ' If PE app and Win 9x
-     GetEXEWordSize = 4
+     ret.Size = 32
+     ret.Cause = ret.Cause + "PE&Win9x|"
     Else ' If PE app and Win NT or higher
      If .dwVerMajor >= 4 Then
+       ret.Cause = ret.Cause + "PE&WinNT4|"
        ' Get info via GetBinaryType
        Dim BinaryType As Long
        GetBinaryType AppPath, BinaryType
        Select Case BinaryType
         Case 0 'SCS_32BIT_BINARY
-         GetEXEWordSize = 4
+         ret.Cause = ret.Cause + "SCS_32BIT_BINARY|"
+         ret.Size = 32
         Case 1 'SCS_DOS_BINARY
-         GetEXEWordSize = 2
+         ret.Cause = ret.Cause + "SCS_DOS_BINARY|"
+         ret.Size = 16
         Case 2 'SCS_WOW_BINARY
-         GetEXEWordSize = 2
+         ret.Cause = ret.Cause + "SCS_WOW_BINARY|"
+         ret.Size = 16
         Case 3 'SCS_PIF_BINARY
-         GetEXEWordSize = 2
+         ret.Cause = ret.Cause + "SCS_PIF_BINARY|"
+         ret.Size = 16
         Case 4 'SCS_POSIX_BINARY
-         GetEXEWordSize = 0 ' Posix word size unknown
+         ' https://stackoverflow.com/q/58986468
+         ret.Cause = ret.Cause + "SCS_POSIX_BINARY|"
+         ret.Size = 16 ' Posix word size unknown
         Case 5 'SCS_OS216_BINARY
-         GetEXEWordSize = 2
+         ret.Cause = ret.Cause + "SCS_OS216_BINARY|"
+         ret.Size = 16
         Case 6 'SCS_64BIT_BINARY
-         GetEXEWordSize = 8
+         ret.Cause = ret.Cause + "SCS_64BIT_BINARY|"
+         ret.Size = 64
        End Select
      Else ' However, if we have, say, Windows NT 3.51, then
-      GetEXEWordSize = 4
+      ret.Cause = ret.Cause + "PE&WinNT3.51|"
+      ret.Size = 32
      End If
      
+     GetEXEWordSize = ret
     End If
    End With
  End Select
+ 
 End Function

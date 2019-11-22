@@ -41,18 +41,18 @@ Begin VB.Form Form1
       Caption         =   "IDK"
       BeginProperty Font 
          Name            =   "Comic Sans MS"
-         Size            =   12
+         Size            =   8.25
          Charset         =   0
          Weight          =   400
          Underline       =   0   'False
          Italic          =   0   'False
          Strikethrough   =   0   'False
       EndProperty
-      Height          =   495
+      Height          =   975
       Left            =   240
       TabIndex        =   4
-      Top             =   4800
-      Width           =   4455
+      Top             =   4440
+      Width           =   5535
    End
    Begin VB.Label Label3 
       Caption         =   "Output (result):"
@@ -68,7 +68,7 @@ Begin VB.Form Form1
       Height          =   255
       Left            =   240
       TabIndex        =   3
-      Top             =   4320
+      Top             =   4080
       Width           =   4455
    End
    Begin VB.Label Label2 
@@ -114,8 +114,11 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Private Sub Command1_Click()
+    Dim dat  As GetEXEWordSize_out
+
     Beep
-    Label4.Caption = "R: " + Str(Module1.GetEXEWordSize(Text1.Text))
+    dat = Module1.GetEXEWordSize(Text1.Text)
+    Label4.Caption = GetEXEWordSize_ToString(dat)
 End Sub
 
 Private Sub Form_Load()
