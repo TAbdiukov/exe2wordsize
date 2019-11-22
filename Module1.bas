@@ -41,15 +41,27 @@ End Type
 
 ' custom struct, for data output
 Type GetEXEWordSize_out
+    ' https://stackoverflow.com/a/4875294/12258312
+    ' https://stackoverflow.com/a/4876841/12258312
     Size As Byte
+    
     Cause As String
     Desc As String
 End Type
 
 Function GetEXEWordSize_ToString(dat As GetEXEWordSize_out) As String
+    Dim buf As String
+    
     ' format is kinda like zfill,
     ' https://bytes.com/topic/visual-basic/answers/778694-how-format-number-0000-a
-    GetEXEWordSize_ToString = Format(dat.Size, "000") + ":" + dat.Cause
+    
+    buf = Format(dat.Size, "000")
+    buf = buf + IIf(Len(dat.Cause), ":" + dat.Cause, "")
+    
+    ' https://docs.microsoft.com/en-us/office/vba/language/reference/user-interface-help/ltrim-rtrim-and-trim-functions
+    buf = buf + IIf(Len(dat.Desc), "-> " + Trim(dat.Desc), "")
+    
+    GetEXEWordSize_ToString = buf
 End Function
 
 Function GetEXEWordSize(AppPath As String) As GetEXEWordSize_out
