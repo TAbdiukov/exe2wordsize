@@ -43,6 +43,7 @@ End Type
 Type GetEXEWordSize_out
     Size As Byte
     Cause As String
+    Desc As String
 End Type
 
 Function GetEXEWordSize_ToString(dat As GetEXEWordSize_out) As String
@@ -99,25 +100,40 @@ Function GetEXEWordSize(AppPath As String) As GetEXEWordSize_out
        GetBinaryType AppPath, BinaryType
        Select Case BinaryType
         Case 0 'SCS_32BIT_BINARY
+         ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
+         ret.Desc = " A 32-bit Windows-based application "
          ret.Cause = ret.Cause + "SCS_32BIT_BINARY|"
          ret.Size = 32
         Case 1 'SCS_DOS_BINARY
+         ' https://users.cs.jmu.edu/abzugcx/Public/Student-Produced-Term-Projects/Operating-Systems-2003-FALL/MS-DOS-by-Dominic-Swayne-Fall-2003.pdf
+         ' First known as 86-DOS, it was developed in about 6 weeks by Tim Paterson of Seattle Computer Products (SCP).  The OS was designed to operate on the company’s own 16-bit personal computers running the Intel 8086 microprocessor.  (Paterson, 1983a)
          ret.Cause = ret.Cause + "SCS_DOS_BINARY|"
          ret.Size = 16
         Case 2 'SCS_WOW_BINARY
+         ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
+         ret.Desc = "A 16-bit Windows-based application"
          ret.Cause = ret.Cause + "SCS_WOW_BINARY|"
          ret.Size = 16
         Case 3 'SCS_PIF_BINARY
+         ' https://users.cs.jmu.edu/abzugcx/Public/Student-Produced-Term-Projects/Operating-Systems-2003-FALL/MS-DOS-by-Dominic-Swayne-Fall-2003.pdf
+         ' First known as 86-DOS, it was developed in about 6 weeks by Tim Paterson of Seattle Computer Products (SCP).  The OS was designed to operate on the company’s own 16-bit personal computers running the Intel 8086 microprocessor.  (Paterson, 1983a)
+         ret.Desc = " A PIF file that executes an MS-DOS – based application "
          ret.Cause = ret.Cause + "SCS_PIF_BINARY|"
          ret.Size = 16
         Case 4 'SCS_POSIX_BINARY
+         ' https://en.wikipedia.org/wiki/Program_information_file
+         ' ...
          ' https://stackoverflow.com/q/58986468
          ret.Cause = ret.Cause + "SCS_POSIX_BINARY|"
          ret.Size = 16 ' Posix word size unknown
         Case 5 'SCS_OS216_BINARY
+         ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
+         ret.Desc = " A 16-bit OS/2-based application "
          ret.Cause = ret.Cause + "SCS_OS216_BINARY|"
          ret.Size = 16
         Case 6 'SCS_64BIT_BINARY
+         ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
+         ret.Desc = " A 64-bit Windows-based application. "
          ret.Cause = ret.Cause + "SCS_64BIT_BINARY|"
          ret.Size = 64
        End Select
