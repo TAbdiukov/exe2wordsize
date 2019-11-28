@@ -200,7 +200,7 @@ Private Function struct_prefill(s As wordsize_struct, AppPath As String)
  End With
 End Function
 
-Function get_wordsize_from_info(AppPath As String, Optional maxRdLen As Integer = 8192, Optional mode As Integer = -1) As wordsize_struct
+Function get_wordsize_from_info(AppPath As String, Optional maxRdLen As Integer = 8192, Optional mode As Integer = 0) As wordsize_struct
  ' +8192 = 2000h = 2*(observed emphirical PE header start pos)
  'Try gathering info thru ShGetFileInfo first
  Dim SHFI As SHFILEINFO

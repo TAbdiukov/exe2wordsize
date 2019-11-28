@@ -178,6 +178,7 @@ Private Sub showHelp()
  CLI.SetTextColour CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_INTENSITY
  CLI.Sendln "FOR EXAMPLE:"
  CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
+ CLI.Sendln "exe2wordsize " + "C:/Projects/idk/Project1.exe"
  CLI.Sendln "exe2wordsize " + Chr(34) + "C:/Projects/idk/Project1.exe" + Chr(34) + " * M=2 R=8192"
  CLI.Sendln ""
  
@@ -194,7 +195,7 @@ Private Sub showHelp()
  CLI.Sendln "# M=(number) - Set analysis mode. Modes supported,"
  CLI.Sendln "## 0 - Automatic and flexible (Default)"
  CLI.Sendln "## 1 - Rely only on WinAPI. 64-bit input may be unreliable"
- CLI.Sendln "## 2 - Rely only on raw-reading. Only 32/64-bit detection, false-detection theoretically possible"
+ CLI.Sendln "## 2 - Rely only on raw-reading. Only 32/64-bit detection, false-pos theoretically possible"
  CLI.Sendln "# R=(number) - In raw-reading mode (R=2), how many bytes to read at most for analysis"
  CLI.Sendln "  (Hint: Only applicable in MODE = 2. Unused in other modes)"
  
