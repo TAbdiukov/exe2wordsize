@@ -133,35 +133,45 @@ Private Sub Form_Load()
  Me.Caption = App.EXEName & ": my NES was 128 bit mhmm"
 End Sub
 Private Sub showHelp()
-        CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_INTENSITY
-        CLI.Sendln "AppModeChange - CLI mod v" + VER
-        CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE Or CLI.FOREGROUND_INTENSITY
-        CLI.Sendln "(Original GUI code by Nirsoft)"
-        CLI.Sendln ""
-        
-        CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_INTENSITY
-        CLI.Sendln "USAGE:"
-        CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
-        CLI.Sendln "amc <path_to_app> <new_mode>"
-        CLI.Sendln ""
-        
-        CLI.SetTextColour CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_INTENSITY
-        CLI.Sendln "FOR EXAMPLE:"
-        CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
-        CLI.Sendln "amc " + Chr(34) + "C:/Projects/My supa CLI project/Project1.exe" + Chr(34) + " 3"
-        CLI.Sendln "(to set the Project1 application to the CLI mode)"
-        CLI.Sendln ""
-        
-        
-        CLI.SetTextColour CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE Or CLI.FOREGROUND_INTENSITY
-        CLI.Sendln "MANUAL:"
-        CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
-        CLI.Sendln "<path_to_app> - Path to your executable. " + Chr(34) + "-tolerable"
-        CLI.Sendln ""
-        CLI.Sendln "<new_mode> - New app SUBSYSTEM mode to set"
-        CLI.Sendln "Informally, one'd need to only know of modes: 2 (CLI) and 3 (GUI)"
-        CLI.Sendln "But below all known modes are listed:"
-        
-        Dim i As Integer
+ CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_INTENSITY
+ CLI.Sendln "exe2wordsize v" + VER
+ CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE Or CLI.FOREGROUND_INTENSITY
+ CLI.Sendln ""
+ 
+ CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_INTENSITY
+ CLI.Sendln "USAGE:"
+ CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
+ CLI.Sendln "exe2wordsize <path_to_app>"
+ CLI.Sendln "exe2wordsize <path_to_app> * <args>"
+ CLI.Sendln ""
+ 
+ CLI.SetTextColour CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_INTENSITY
+ CLI.Sendln "FOR EXAMPLE:"
+ CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
+ CLI.Sendln "exe2wordsize " + Chr(34) + "C:/Projects/idk/Project1.exe" + Chr(34) + " * M=2 R=8192"
+ CLI.Sendln ""
+ 
+ 
+ CLI.SetTextColour CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE Or CLI.FOREGROUND_INTENSITY
+ CLI.Sendln "MANUAL:"
+ CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
+ CLI.Sendln "<path_to_app> - Path to your executable. " + Chr(34) + "-tolerable"
+ CLI.Sendln ""
+ CLI.Sendln "* - Delimiter required if you use args."
+ CLI.Sendln "(Hint: Don't have to use asterick if no args required)"
+ CLI.Sendln ""
+ CLI.Sendln "<args> - Extra arguments, space-delimited. Supported args below,"
+ CLI.Sendln "# M=(number) - Set analysis mode. Modes supported,"
+ CLI.Sendln "## 0 - Automatic and flexible (Default)"
+ CLI.Sendln "## 1 - Rely only on WinAPI. 64-bit input may be unreliable"
+ CLI.Sendln "## 2 - Rely only on raw-reading. Only 32/64-bit detection, false-detection theoretically possible"
+ CLI.Sendln "# R=(number) - In raw-reading mode (R=2), how many bytes to read at most for analysis"
+ CLI.Sendln "  (Hint: Only applicable in MODE = 2. Unused in other modes)"
+ 
+ 
+ CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_BLUE Or CLI.FOREGROUND_INTENSITY
+ CLI.Sendln "OUTPUT:"
+ CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
+ CLI.Sendln "In JSON format"
 End Sub
 

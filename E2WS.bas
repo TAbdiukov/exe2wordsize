@@ -190,6 +190,7 @@ Private Function struct_prefill(s As wordsize_struct, AppPath As String)
   .code = -1
   .file = AppPath
   .time = get_unix_time_mod
+  .args = ""
  End With
 End Function
 
@@ -208,7 +209,7 @@ Function get_wordsize_from_info(AppPath As String, Optional maxRdLen As Integer 
  
  sh_read = SHGetFileInfo(AppPath, 0, SHFI, Len(SHFI), &H2000)
   
- If (sh_read > 0) Then ' if can be read, successfully
+ If (sh_read > 0) Or (mode = 1) Then ' if can be read, successfully
   ret.walkthrough = ret.walkthrough + "SHGetFileInfo=OK|"
     intLoWord = sh_read And &HFFFF&
     intLoWordHiByte = intLoWord \ &H100 And &HFF&
@@ -287,7 +288,7 @@ Function get_wordsize_from_info(AppPath As String, Optional maxRdLen As Integer 
        End If
       End With
     End Select
-  ElseIf (sh_read = 0) Then ' If EXE cannot be read
+  ElseIf (sh_read = 0) Or (mode = 2) Then ' If EXE cannot be read
   ret.wordsize = 0
   ret.walkthrough = ret.walkthrough + "SHGetFileInfo=BAD|"
   
