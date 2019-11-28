@@ -5,21 +5,31 @@ Begin VB.Form Form1
    ClientHeight    =   9150
    ClientLeft      =   45
    ClientTop       =   435
-   ClientWidth     =   5910
+   ClientWidth     =   7860
    Icon            =   "Form1.frx":0000
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    MinButton       =   0   'False
    ScaleHeight     =   9150
-   ScaleWidth      =   5910
+   ScaleWidth      =   7860
    StartUpPosition =   3  'Windows Default
+   Begin VB.TextBox Text3 
+      Height          =   4575
+      Left            =   240
+      Locked          =   -1  'True
+      MultiLine       =   -1  'True
+      TabIndex        =   6
+      Text            =   "Form1.frx":0ECA
+      Top             =   4440
+      Width           =   7335
+   End
    Begin VB.TextBox Text2 
       Height          =   5295
-      Left            =   6000
-      TabIndex        =   6
+      Left            =   9840
+      TabIndex        =   5
       Text            =   "Text2"
       Top             =   120
-      Width           =   10815
+      Width           =   6975
    End
    Begin VB.CommandButton Command1 
       Caption         =   "Try Me!"
@@ -34,34 +44,17 @@ Begin VB.Form Form1
       EndProperty
       Height          =   615
       Left            =   360
-      TabIndex        =   5
+      TabIndex        =   4
       Top             =   3360
       Width           =   3135
    End
    Begin VB.TextBox Text1 
-      Height          =   615
+      Height          =   375
       Left            =   240
       TabIndex        =   2
       Text            =   "Text1"
       Top             =   2640
       Width           =   4455
-   End
-   Begin VB.Label Label4 
-      Caption         =   "IDK"
-      BeginProperty Font 
-         Name            =   "Comic Sans MS"
-         Size            =   8.25
-         Charset         =   0
-         Weight          =   400
-         Underline       =   0   'False
-         Italic          =   0   'False
-         Strikethrough   =   0   'False
-      EndProperty
-      Height          =   4455
-      Left            =   240
-      TabIndex        =   4
-      Top             =   4440
-      Width           =   5415
    End
    Begin VB.Label Label3 
       Caption         =   "Output (result):"
@@ -127,7 +120,7 @@ Private Sub Command1_Click()
 
     Beep
     dat = E2WS.get_wordsize_from_info(Text1.Text)
-    Label4.Caption = E2WS.struct_to_json(dat)
+    Text3.Text = E2WS.struct_to_json(dat)
 End Sub
 
 Private Sub Form_Load()
