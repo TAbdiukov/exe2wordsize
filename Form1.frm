@@ -116,21 +116,51 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Private Sub Command1_Click()
-    Dim dat  As wordsize_struct
-
-    Beep
-    dat = E2WS.get_wordsize_from_info(Text1.Text)
-    Text3.Text = E2WS.struct_to_json(dat)
+ Dim dat  As wordsize_struct
+ Text3.Text = E2WS.wordsize_to_json(Text1.Text)
 End Sub
 
 Private Sub Form_Load()
  CLI.setup
  E2WS.setup
+    
+ ' Initialise args
+ Dim argw() As String
+ Dim argc As Integer
+ Dim argt As String
 
  Dim mypath As String
  Text1.Text = E2WS.app_path_exe
  
  Me.Caption = App.EXEName & ": my NES was 128 bit mhmm"
+ 
+ argt = Trim(Command)
+ argw = Split(argt, "*")
+ argc = UBound(argw) - LBound(argw) + 1 ' https://forums.windowssecrets.com/showthread.php/28214-counting-array-elements-(vb6)
+ 
+ If (Len(argt)) Then ' If number of args suffice
+  Dim path As String
+  
+  path = argw(0)
+  path = Replace(path, Chr(34), "")
+  
+  
+  If (argc > 1) Then
+   Dim real_args As String
+   real_args = Trim(argw(1))
+   '
+   quit 666
+  Else
+   'Dim dat As E2WS.wordsize_struct
+   Dim out As wordsize_struct
+   out = E2WS.get_wordsize_from_info(path)
+   CLI.Sendln E2WS.struct_to_json(out)
+   quit out.code
+  End If
+ Else
+  showHelp
+  quit 0
+ End If
 End Sub
 Private Sub showHelp()
  CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_INTENSITY

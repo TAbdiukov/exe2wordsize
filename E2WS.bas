@@ -93,6 +93,12 @@ Public Function setup()
  SIGN64 = Chr(100) + Chr(134)
 End Function
 
+Public Function wordsize_to_json(s As String) As String
+ Dim dat As wordsize_struct
+ dat = get_wordsize_from_info(s)
+ wordsize_to_json = struct_to_json(dat)
+End Function
+
 Function struct_to_json(dat As wordsize_struct) As String
  ' Its sure rudimental,
  ' but it works!
