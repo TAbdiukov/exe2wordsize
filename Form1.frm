@@ -6,6 +6,7 @@ Begin VB.Form Form1
    ClientLeft      =   45
    ClientTop       =   435
    ClientWidth     =   5910
+   Icon            =   "Form1.frx":0000
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    MinButton       =   0   'False
@@ -122,18 +123,52 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Private Sub Command1_Click()
-    Dim dat  As GetEXEWordSize_out
+    Dim dat  As wordsize_struct
 
     Beep
-    dat = Module1.GetEXEWordSize(Text1.Text)
-    Label4.Caption = GetEXEWordSize_ToJson(dat)
+    dat = E2WS.get_wordsize_from_info(Text1.Text)
+    Label4.Caption = E2WS.struct_to_json(dat)
 End Sub
 
 Private Sub Form_Load()
-    Dim mypath As String
+ CLI.setup
+ E2WS.setup
 
-    ' https://stackoverflow.com/a/12423852/12258312
-    mypath = App.path & IIf(Right$(App.path, 1) <> "\", "\", "") & App.EXEName & ".exe"
-    Text1.Text = mypath
-End Sub
+ Dim mypath As String
+ Text1.Text = E2WS.app_path_exe
  
+ Me.Caption = App.EXEName & ": my NES was 128 bit mhmm"
+End Sub
+Private Sub showHelp()
+        CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_INTENSITY
+        CLI.Sendln "AppModeChange - CLI mod v" + VER
+        CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE Or CLI.FOREGROUND_INTENSITY
+        CLI.Sendln "(Original GUI code by Nirsoft)"
+        CLI.Sendln ""
+        
+        CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_INTENSITY
+        CLI.Sendln "USAGE:"
+        CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
+        CLI.Sendln "amc <path_to_app> <new_mode>"
+        CLI.Sendln ""
+        
+        CLI.SetTextColour CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_INTENSITY
+        CLI.Sendln "FOR EXAMPLE:"
+        CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
+        CLI.Sendln "amc " + Chr(34) + "C:/Projects/My supa CLI project/Project1.exe" + Chr(34) + " 3"
+        CLI.Sendln "(to set the Project1 application to the CLI mode)"
+        CLI.Sendln ""
+        
+        
+        CLI.SetTextColour CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE Or CLI.FOREGROUND_INTENSITY
+        CLI.Sendln "MANUAL:"
+        CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
+        CLI.Sendln "<path_to_app> - Path to your executable. " + Chr(34) + "-tolerable"
+        CLI.Sendln ""
+        CLI.Sendln "<new_mode> - New app SUBSYSTEM mode to set"
+        CLI.Sendln "Informally, one'd need to only know of modes: 2 (CLI) and 3 (GUI)"
+        CLI.Sendln "But below all known modes are listed:"
+        
+        Dim i As Integer
+End Sub
+

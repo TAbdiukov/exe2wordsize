@@ -1,13 +1,13 @@
-Attribute VB_Name = "Module1"
+Attribute VB_Name = "E2WS"
 Option Explicit
 
-' Used by: GetEXEWordSize
+' Used by: get_wordsize_from_info
 Declare Function GetBinaryType Lib "kernel32" Alias "GetBinaryTypeA" (ByVal lpApplicationName As String, lpBinaryType As Long) As Long
 
-' Used by: GetEXEWordSize
+' Used by: get_wordsize_from_info
 Declare Function GetVersionEx Lib "kernel32" Alias "GetVersionExA" (lpVersionInformation As OSVERSIONINFO) As Integer
 
-' Used by: GetEXEWordSize
+' Used by: get_wordsize_from_info
 Declare Function SHGetFileInfo Lib "shell32.dll" Alias "SHGetFileInfoA" (ByVal pszPath As String, ByVal dwFileAttributes As Long, psfi As SHFILEINFO, ByVal cbFileInfo As Long, ByVal uFlags As Long) As Long
  
 ' Deprecated, but let it be for now
@@ -40,9 +40,10 @@ Type SHFILEINFO
 End Type
 
 ' custom struct, for data output
-Type GetEXEWordSize_out
- input As String
+Type wordsize_struct
+ file As String
  time As String
+ code As Integer
  
  ' https://stackoverflow.com/a/4875294/12258312
  ' https://stackoverflow.com/a/4876841/12258312
@@ -53,38 +54,76 @@ Type GetEXEWordSize_out
  desc As String * 80
 End Type
 
-Function GetEXEWordSize_ToJson(dat As GetEXEWordSize_out) As String
- ' Its sure rudimental,
- ' but it works!
- 
- Dim C34 As String * 1
+'' In generic use
+'' https://social.msdn.microsoft.com/Forums/sqlserver/en-US/d6e76731-8e3b-465f-9d5a-12c6498d6b6c/how-to-return-exit-code-from-vb6-form?forum=winforms
+Private Declare Sub ExitProcess Lib "kernel32" (ByVal uExitCode As Long)
+
+' for header detection
+Const PE_HEADER As String = "PE" + vbNullChar + vbNullChar 'PE\0\0
+
+' In use by get_error_desc
+Private Const ERROR_IRRECOVERABLE = -1
+Private Const ERROR_SUCCESS = 0 ' all good
+Private Const ERROR_INVALID_ARGS = 1 'problem with args
+Private Const ERROR_INVALID_OUTPUT = 2
+Private Const ERROR_WARNING_AMBIGUOUS_WORDSIZE = 7
+
+' pseudo consts, see setup()
+Public APP_NAME As String
+Public VER As String
+Public DEBUGGER As Boolean
+Public C34 As String * 1
+Public SIGN32 As String * 2
+Public SIGN64 As String * 2
+
+Public Function setup()
+ APP_NAME = "exe2wordsize"
+ VER = App.Major & "." & App.Minor & App.Revision
+ DEBUGGER = GetRunningInIDE()
  C34 = Chr(34)
  
- Dim C34P As String
- C34P = C34 + ": " + C34
- 
+ ' https://superuser.com/questions/358434/how-to-check-if-a-binary-is-32-or-64-bit-on-windows)
+ ' answer in reverse endianness format though
+ ' Hence (in HEX):
+ ' 32-bit: 4C 01 -> 076 001 DEC
+ ' 64-bit: 64 86 -> 100 134 DEC
+ SIGN32 = Chr(76) + Chr(1)
+ SIGN64 = Chr(100) + Chr(134)
+End Function
+
+Function struct_to_json(dat As wordsize_struct) As String
+ ' Its sure rudimental,
+ ' but it works!
  Dim buf As String
+ 
  With dat
-  .walkthrough = .walkthrough + "walk!"
+  .walkthrough = .walkthrough + "Json|" ' for logging
  
   buf = "{" + vbCrLf
   buf = buf + String(1, vbTab) + C34 + App.Title + C34 + ":{" + vbCrLf
   
-  ' input + time
-  buf = buf + String(2, vbTab) + C34 + "input" + C34P + .input + C34 + vbCrLf
-  buf = buf + String(2, vbTab) + C34 + "time" + C34P + .time + C34 + vbCrLf
+  ' file
+  buf = buf + String(2, vbTab) + C34 + "file" + C34 + ": " + C34 + .file + C34 + vbCrLf
+  
+  ' time
+  buf = buf + String(2, vbTab) + C34 + "time" + C34 + ": " + .time + C34 + vbCrLf
+  
+  ' code
+  buf = buf + String(2, vbTab) + C34 + "code" + C34 + ": " + Str(.code) + vbCrLf
+  
+  ' code - desc
+  buf = buf + String(2, vbTab) + C34 + "code_desc" + C34 + ": " + C34 + get_error_desc(.code) + C34 + vbCrLf
   
   ' wordsize
-  buf = buf + String(2, vbTab) + C34 + "wordsize" + C34P
-  buf = buf + zfill_byte(.wordsize, 3) + C34 + vbCrLf
+  buf = buf + String(2, vbTab) + C34 + "wordsize" + C34 + ": " + zfill_byte(.wordsize, 3) + vbCrLf
   
   ' desc
-  buf = buf + String(2, vbTab) + C34 + "desc" + C34P
+  buf = buf + String(2, vbTab) + C34 + "desc" + C34 + ": " + C34
   ' https://docs.microsoft.com/en-us/office/vba/language/reference/user-interface-help/ltrim-rtrim-and-trim-functions
   buf = buf + IIf(Asc(.desc), Trim(.desc), "") + C34 + vbCrLf
      
   ' walkthrough
-  buf = buf + String(2, vbTab) + C34 + "walkthrough" + C34P
+  buf = buf + String(2, vbTab) + C34 + "walkthrough" + C34 + ": " + C34
   buf = buf + IIf(Asc(.walkthrough), .walkthrough, "") + C34 + vbCrLf
   
   ' end item
@@ -93,8 +132,17 @@ Function GetEXEWordSize_ToJson(dat As GetEXEWordSize_out) As String
   ' end json
   buf = buf + "}" + vbCrLf
   
-  GetEXEWordSize_ToJson = buf
+  struct_to_json = buf
  End With
+End Function
+
+Function app_path()
+  ' https://stackoverflow.com/a/12423852/12258312
+  app_path = App.path & IIf(Right$(App.path, 1) <> "\", "\", "")
+End Function
+
+Function app_path_exe()
+  app_path_exe = app_path() & App.EXEName & ".exe"
 End Function
 
 Function zfill_byte(i As Byte, n As Byte) As String
@@ -130,15 +178,15 @@ Function read_binary_file(path As String, Optional l As Integer = 2) As Byte()
     Close nFile
 End Function
 
-Function GetEXEWordSize_prefill(s As GetEXEWordSize_out, AppPath As String)
+Private Function struct_prefill(s As wordsize_struct, AppPath As String)
  With s
   .walkthrough = "rdy|"
-  .input = AppPath
+  .file = AppPath
   .time = Now
  End With
 End Function
 
-Function GetEXEWordSize(AppPath As String, Optional maxRdLen As Integer = 8192) As GetEXEWordSize_out
+Function get_wordsize_from_info(AppPath As String, Optional maxRdLen As Integer = 8192, Optional mode As Integer = -1) As wordsize_struct
  ' +8192 = 2000h = 2*(observed emphirical PE header start pos)
  'Try gathering info thru ShGetFileInfo first
  Dim SHFI As SHFILEINFO
@@ -148,21 +196,8 @@ Function GetEXEWordSize(AppPath As String, Optional maxRdLen As Integer = 8192) 
  Dim intLoWordLoByte As Integer
  Dim strLOWORD   As String
  
- ' https://superuser.com/questions/358434/how-to-check-if-a-binary-is-32-or-64-bit-on-windows)
- ' answer in reverse endianness format though
- ' Hence (in HEX):
- ' 32-bit: 4C 01 -> 076 001 DEC
- ' 64-bit: 64 86 -> 100 134 DEC
- Const PE_HEADER As String = "PE" + vbNullChar + vbNullChar 'PE\0\0
-
- Dim SIGN32 As String * 2
- SIGN32 = Chr(76) + Chr(1)
-
- Dim SIGN64 As String * 2
- SIGN64 = Chr(100) + Chr(134)
- 
- Dim ret As GetEXEWordSize_out
- GetEXEWordSize_prefill ret, AppPath
+ Dim ret As wordsize_struct
+ struct_prefill ret, AppPath
  
  lngResult = SHGetFileInfo(AppPath, 0, SHFI, Len(SHFI), &H2000)
   
@@ -187,7 +222,6 @@ Function GetEXEWordSize(AppPath As String, Optional maxRdLen As Integer = 8192) 
 
   If (pe_pos > 0) Then
    Dim pe_nextbytes As String
-
    pe_nextbytes = Mid(pe_buf, pe_pos + Len(PE_HEADER), 2)
    If (Len(pe_nextbytes)) Then
     If (StrComp(pe_nextbytes, SIGN32, vbBinaryCompare) = 0) Then
@@ -207,8 +241,6 @@ Function GetEXEWordSize(AppPath As String, Optional maxRdLen As Integer = 8192) 
   End If ' If (pe_pos > 0) ...
  Else ' if can be read
   ret.walkthrough = ret.walkthrough + "SHGetFileInfo=OK|"
-
-  
     intLoWord = lngResult And &HFFFF&
     intLoWordHiByte = intLoWord \ &H100 And &HFF&
     intLoWordLoByte = intLoWord And &HFF&
@@ -279,6 +311,65 @@ Function GetEXEWordSize(AppPath As String, Optional maxRdLen As Integer = 8192) 
       End With
     End Select
  End If
- GetEXEWordSize = ret
+ get_wordsize_from_info = ret
+End Function
+
+Public Sub output_err(errMsg As String)
+    CLI.Sendln "Error: " & errMsg
+End Sub
+
+Public Sub output_result(ByVal res As Integer, ByVal iError As Integer)
+    If iError = 0 Then
+        CLI.Sendln "Success. The application mode was successfully changed to"
+        'CLI.Sendln Subsys_ret(res)
+    Else
+        output_err get_error_desc(iError)
+    End If
+    
+End Sub
+
+Private Function get_error_desc(iError As Integer) As String
+    Select Case iError
+        Case ERROR_SUCCESS
+            get_error_desc = "Success"
+        
+        Case ERROR_INVALID_ARGS
+            get_error_desc = "Args are invalid"
+        
+        Case ERROR_IRRECOVERABLE
+            get_error_desc = "The program encountered an irrecoverable error"
+        
+        Case ERROR_WARNING_AMBIGUOUS_WORDSIZE
+            get_error_desc = "Success, but the wordsize seems alarmingly ambiguous"
+    End Select
+End Function
+
+Public Function quit(code As Integer)
+    On Error Resume Next
+
+    CLI.Send vbNewLine
+
+    If DEBUGGER Then
+        Debug.Print "End"
+    Else
+        ExitProcess code
+    End If
+End Function
+
+' https://stackoverflow.com/a/9068210
+Public Function GetRunningInIDE() As Boolean
+   Dim x As Long
+   Debug.Assert Not TestIDE(x)
+   GetRunningInIDE = x = 1
+End Function
+
+' https://stackoverflow.com/a/9068210
+Private Function TestIDE(x As Long) As Boolean
+    x = 1
+End Function
+
+' original, from simple_capture
+Private Function get_unix_time(d As Date) As Long
+ get_unix_time = DateDiff("s", "01/01/1970 00:00:00", d)
 End Function
 
