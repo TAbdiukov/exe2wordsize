@@ -197,7 +197,7 @@ Function get_wordsize_from_info(AppPath As String, Optional maxRdLen As Integer 
  ' +8192 = 2000h = 2*(observed emphirical PE header start pos)
  'Try gathering info thru ShGetFileInfo first
  Dim SHFI As SHFILEINFO
- Dim lngResult   As Long
+ Dim sh_read   As Long
  Dim intLoWord   As Integer
  Dim intLoWordHiByte As Integer
  Dim intLoWordLoByte As Integer
@@ -206,49 +206,11 @@ Function get_wordsize_from_info(AppPath As String, Optional maxRdLen As Integer 
  Dim ret As wordsize_struct
  struct_prefill ret, AppPath
  
- lngResult = SHGetFileInfo(AppPath, 0, SHFI, Len(SHFI), &H2000)
+ sh_read = SHGetFileInfo(AppPath, 0, SHFI, Len(SHFI), &H2000)
   
- If lngResult = 0 Then ' If EXE cannot be read
-  ret.wordsize = 0
-  ret.walkthrough = ret.walkthrough + "SHGetFileInfo=BAD|"
-  
-  Dim pe_buf As String
-  pe_buf = read_binary_file(AppPath, maxRdLen)
-  
- 
-  'Dim iFileNo As Integer
-  'iFileNo = FreeFile
-  'Open "C:\Test.txt" For Output As #iFileNo
-  'Print #iFileNo, str2hexarray(pe_buf)
-  'Form1.Text2.Text = str2hexarray(pe_buf)
-  'Close #iFileNo
-  
-  ' https://superuser.com/questions/358434/how-to-check-if-a-binary-is-32-or-64-bit-on-windows)
-  Dim pe_pos As Long
-  pe_pos = InStr(1, pe_buf, PE_HEADER, vbBinaryCompare)
-
-  If (pe_pos > 0) Then
-   Dim pe_nextbytes As String
-   pe_nextbytes = Mid(pe_buf, pe_pos + Len(PE_HEADER), 2)
-   If (Len(pe_nextbytes)) Then
-    If (StrComp(pe_nextbytes, SIGN32, vbBinaryCompare) = 0) Then
-     ret.wordsize = 32 '
-     ret.walkthrough = ret.walkthrough + "Sign32|"
-    ElseIf (StrComp(pe_nextbytes, SIGN64, vbBinaryCompare) = 0) Then
-     ret.wordsize = 64 '
-     ret.walkthrough = ret.walkthrough + "Sign64|"
-    Else
-     ret.wordsize = 0 '
-     ret.walkthrough = ret.walkthrough + "Sign?? (" + str2hexarray(Mid(pe_buf, pe_pos, 10)) + ") @ " + Hex(pe_pos) + "|"
-    End If
-   End If
-  Else
-   ret.wordsize = 0 ' prefill
-   ret.walkthrough = ret.walkthrough + "NonPE/NonExecutable?|"
-  End If ' If (pe_pos > 0) ...
- Else ' if can be read
+ If (sh_read > 0) Then ' if can be read, successfully
   ret.walkthrough = ret.walkthrough + "SHGetFileInfo=OK|"
-    intLoWord = lngResult And &HFFFF&
+    intLoWord = sh_read And &HFFFF&
     intLoWordHiByte = intLoWord \ &H100 And &HFF&
     intLoWordLoByte = intLoWord And &HFF&
     strLOWORD = Chr$(intLoWordLoByte) & Chr$(intLoWordHiByte)
@@ -325,6 +287,44 @@ Function get_wordsize_from_info(AppPath As String, Optional maxRdLen As Integer 
        End If
       End With
     End Select
+  ElseIf (sh_read = 0) Then ' If EXE cannot be read
+  ret.wordsize = 0
+  ret.walkthrough = ret.walkthrough + "SHGetFileInfo=BAD|"
+  
+  Dim pe_buf As String
+  pe_buf = read_binary_file(AppPath, maxRdLen)
+  
+ 
+  'Dim iFileNo As Integer
+  'iFileNo = FreeFile
+  'Open "C:\Test.txt" For Output As #iFileNo
+  'Print #iFileNo, str2hexarray(pe_buf)
+  'Form1.Text2.Text = str2hexarray(pe_buf)
+  'Close #iFileNo
+  
+  ' https://superuser.com/questions/358434/how-to-check-if-a-binary-is-32-or-64-bit-on-windows)
+  Dim pe_pos As Long
+  pe_pos = InStr(1, pe_buf, PE_HEADER, vbBinaryCompare)
+
+  If (pe_pos > 0) Then
+   Dim pe_nextbytes As String
+   pe_nextbytes = Mid(pe_buf, pe_pos + Len(PE_HEADER), 2)
+   If (Len(pe_nextbytes)) Then
+    If (StrComp(pe_nextbytes, SIGN32, vbBinaryCompare) = 0) Then
+     ret.wordsize = 32 '
+     ret.walkthrough = ret.walkthrough + "Sign32|"
+    ElseIf (StrComp(pe_nextbytes, SIGN64, vbBinaryCompare) = 0) Then
+     ret.wordsize = 64 '
+     ret.walkthrough = ret.walkthrough + "Sign64|"
+    Else
+     ret.wordsize = 0 '
+     ret.walkthrough = ret.walkthrough + "Sign?? (" + str2hexarray(Mid(pe_buf, pe_pos, 10)) + ") @ " + Hex(pe_pos) + "|"
+    End If
+   End If
+  Else
+   ret.wordsize = 0 ' prefill
+   ret.walkthrough = ret.walkthrough + "NonPE/NonExecutable?|"
+  End If ' If (pe_pos > 0) ...
  End If
  get_wordsize_from_info = ret
 End Function
