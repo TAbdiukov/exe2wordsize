@@ -13,6 +13,13 @@ Begin VB.Form Form1
    ScaleHeight     =   9150
    ScaleWidth      =   7860
    StartUpPosition =   3  'Windows Default
+   Begin VB.TextBox Text4 
+      Height          =   375
+      Left            =   5040
+      TabIndex        =   7
+      Top             =   2640
+      Width           =   2535
+   End
    Begin VB.TextBox Text3 
       Height          =   4575
       Left            =   240
@@ -55,6 +62,14 @@ Begin VB.Form Form1
       Text            =   "Text1"
       Top             =   2640
       Width           =   4455
+   End
+   Begin VB.Label Label4 
+      Caption         =   "Argz"
+      Height          =   495
+      Left            =   5040
+      TabIndex        =   8
+      Top             =   2160
+      Width           =   2535
    End
    Begin VB.Label Label3 
       Caption         =   "Output (result):"
@@ -117,7 +132,10 @@ Option Explicit
 
 Private Sub Command1_Click()
  Dim dat  As wordsize_struct
- Text3.Text = E2WS.wordsize_to_json(Text1.Text)
+ 
+ dat = E2WS.get_wordsize_from_info(Text1.Text, Text4.Text)
+ 
+ Text3.Text = E2WS.struct_to_json(dat)
 End Sub
 
 Private Sub Form_Load()
@@ -144,22 +162,22 @@ Private Sub Form_Load()
   path = argw(0)
   path = Replace(path, Chr(34), "")
   
+  Dim out As wordsize_struct
   
   If (argc > 1) Then
    Dim real_args As String
    real_args = Trim(argw(1))
-   '
-   quit 666
+   out = E2WS.get_wordsize_from_info(path, real_args)
+   CLI.Sendln E2WS.struct_to_json(out)
+   quit out.code
   Else
-   'Dim dat As E2WS.wordsize_struct
-   Dim out As wordsize_struct
    out = E2WS.get_wordsize_from_info(path)
    CLI.Sendln E2WS.struct_to_json(out)
    quit out.code
   End If
  Else
   showHelp
-  quit 0
+  'quit 0
  End If
 End Sub
 Private Sub showHelp()

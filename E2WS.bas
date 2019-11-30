@@ -44,7 +44,7 @@ Type wordsize_struct
  file As String
  args As String
  time As String
- code As Integer
+ code As Long
  
  ' https://stackoverflow.com/a/4875294/12258312
  ' https://stackoverflow.com/a/4876841/12258312
@@ -53,6 +53,12 @@ Type wordsize_struct
  walkthrough As String
  
  desc As String * 80
+End Type
+
+Type wordsize_params
+ max_read_bytes As Long
+ mode As Long
+ code As Long
 End Type
 
 '' In generic use
@@ -66,15 +72,20 @@ Const JSON_PARAMS_DELIM As String = "," & vbCrLf
 ' In use by get_error_desc
 Private Const ERROR_IRRECOVERABLE = -1
 Private Const ERROR_SUCCESS = 0 ' all good
-Private Const ERROR_INVALID_ARGS = 1 'problem with args
-Private Const ERROR_INVALID_OUTPUT = 2
+Private Const ERROR_INVALID_ARGS = 1 'problem with ARGS
+Private Const ERROR_INVALID_MODE = 2 ' invalid mode
 Private Const ERROR_WARNING_AMBIGUOUS_WORDSIZE = 7
+Private Const ERROR_WARNING_BAD_LUCK = 8
+
+' For parse_args
+Private Const ARGS_FLAG_MODE As String = "M"
+Private Const ARGS_FLAG_MAXRDLEN As String = "R" ' on mode = 2
 
 ' pseudo consts, see setup()
 Public APP_NAME As String
 Public VER As String
 Public DEBUGGER As Boolean
-Public C34 As String * 1
+Public C34 As String
 Public SIGN32 As String
 Public SIGN64 As String
 
@@ -175,7 +186,7 @@ Function str2hexarray(s As String, Optional delim As String = " ") As String
  str2hexarray = r
 End Function
 
-Function read_binary_file(path As String, Optional l As Integer = 2) As Byte()
+Function read_binary_file(path As String, Optional l As Long = 2) As Byte()
     Dim nFile As Integer
     Debug.Assert (l > 0)
     
@@ -190,17 +201,68 @@ Function read_binary_file(path As String, Optional l As Integer = 2) As Byte()
     Close nFile
 End Function
 
-Private Function struct_prefill(s As wordsize_struct, AppPath As String)
+Private Function struct_prefill(s As wordsize_struct, AppPath As String, args As String)
  With s
   .walkthrough = "rdy|"
   .code = -1
   .file = AppPath
   .time = get_unix_time_mod
-  .args = ""
+  .args = args
  End With
 End Function
 
-Function get_wordsize_from_info(AppPath As String, Optional maxRdLen As Integer = 8192, Optional mode As Integer = 0) As wordsize_struct
+Function wordsize_params_init(ret As wordsize_params)
+ With ret
+  .max_read_bytes = 8192
+  .mode = 0
+  .code = 0
+ End With
+
+End Function
+
+Function parse_args(s As String, Optional demiliter As String = " ", Optional sub_delimiter As String = "=") As wordsize_params
+ On Error Resume Next
+ 
+ Dim ret As wordsize_params
+ wordsize_params_init ret
+
+ If (Len(s) > 0) Then
+  Dim a() As String
+  Dim ac As Integer
+  Dim i As Integer
+  
+  Dim b() As String
+  Dim bc As Integer
+  Dim bbuf As String
+  
+  Dim k As Integer
+  
+  
+  a = Split(s, demiliter)
+  ac = UBound(a)
+  
+  For i = 0 To ac
+   b = Split(a(i), sub_delimiter)
+   bbuf = UCase(Trim(b(0)))
+   With ret
+    Select Case bbuf
+     Case ARGS_FLAG_MAXRDLEN
+      .max_read_bytes = CLng(Trim(b(1)))
+     Case ARGS_FLAG_MODE
+      .mode = CLng(Trim(b(1)))
+     Case Else
+      .code = ERROR_INVALID_ARGS
+      parse_args = ret
+    End Select
+   End With
+  Next
+ End If
+ 
+ parse_args = ret
+End Function
+
+
+Function get_wordsize_from_info(AppPath As String, Optional args As String = "") As wordsize_struct
  ' +8192 = 2000h = 2*(observed emphirical PE header start pos)
  'Try gathering info thru ShGetFileInfo first
  Dim SHFI As SHFILEINFO
@@ -211,127 +273,144 @@ Function get_wordsize_from_info(AppPath As String, Optional maxRdLen As Integer 
  Dim strLOWORD   As String
  
  Dim ret As wordsize_struct
- struct_prefill ret, AppPath
+ struct_prefill ret, AppPath, args
  
- sh_read = SHGetFileInfo(AppPath, 0, SHFI, Len(SHFI), &H2000)
-  
- If (sh_read > 0) Or (mode = 1) Then ' if can be read, successfully
-  ret.walkthrough = ret.walkthrough + "SHGetFileInfo=OK|"
-    intLoWord = sh_read And &HFFFF&
-    intLoWordHiByte = intLoWord \ &H100 And &HFF&
-    intLoWordLoByte = intLoWord And &HFF&
-    strLOWORD = Chr$(intLoWordLoByte) & Chr$(intLoWordHiByte)
-     
-    Select Case strLOWORD
-     Case "NE", "MZ" ' as far as I can tell,  both NE and MZ are 16bit
-      ret.wordsize = 16
-      ret.walkthrough = ret.walkthrough + "LOWORD:NEMZ|"
-     Case "PE" ' If PE app, gather OS info
-      ret.walkthrough = ret.walkthrough + "LOWORD:PE|"
-      Dim OSV As OSVERSIONINFO
-      With OSV
-       .OSVSize = Len(OSV)
-       GetVersionEx OSV
-       If .PlatformID < 2 Then ' If PE app and Win 9x
-        ret.wordsize = 32
-        ret.walkthrough = ret.walkthrough + "PE&Win9x|"
-       ElseIf .dwVerMajor >= 4 Then ' If PE app and Win NT or higher
-         ret.walkthrough = ret.walkthrough + "PE&WinNT4|"
-         ' Get info via GetBinaryType
-         Dim BinaryType As Long
-         GetBinaryType AppPath, BinaryType
-         Select Case BinaryType
-          Case 0 'SCS_32BIT_BINARY
-           ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
-           ret.desc = " A 32-bit Windows-based application "
-           ret.walkthrough = ret.walkthrough + "SCS_32BIT_BINARY|"
-           ret.wordsize = 32
-           ret.code = 0 ' Success!
-          Case 1 'SCS_DOS_BINARY
-           ' https://users.cs.jmu.edu/abzugcx/Public/Student-Produced-Term-Projects/Operating-Systems-2003-FALL/MS-DOS-by-Dominic-Swayne-Fall-2003.pdf
-           ' First known as 86-DOS, it was developed in about 6 weeks by Tim Paterson of Seattle Computer Products (SCP).  The OS was designed to operate on the company’s own 16-bit personal computers running the Intel 8086 microprocessor.  (Paterson, 1983a)
-           ret.walkthrough = ret.walkthrough + "SCS_DOS_BINARY|"
-           ret.wordsize = 16
-           ret.code = 0 ' Success!
-          Case 2 'SCS_WOW_BINARY
-           ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
-           ret.desc = "A 16-bit Windows-based application"
-           ret.walkthrough = ret.walkthrough + "SCS_WOW_BINARY|"
-           ret.wordsize = 16
-           ret.code = 0 ' Success!
-          Case 3 'SCS_PIF_BINARY
-           ' https://users.cs.jmu.edu/abzugcx/Public/Student-Produced-Term-Projects/Operating-Systems-2003-FALL/MS-DOS-by-Dominic-Swayne-Fall-2003.pdf
-           ' First known as 86-DOS, it was developed in about 6 weeks by Tim Paterson of Seattle Computer Products (SCP).  The OS was designed to operate on the company’s own 16-bit personal computers running the Intel 8086 microprocessor.  (Paterson, 1983a)
-           ret.desc = " A PIF file that executes an MS-DOS – based application "
-           ret.walkthrough = ret.walkthrough + "SCS_PIF_BINARY|"
-           ret.wordsize = 16
-           ret.code = 0 ' Success!
-          Case 4 'SCS_POSIX_BINARY
-           ' https://en.wikipedia.org/wiki/Program_information_file
-           ' ...
-           ' https://stackoverflow.com/q/58986468
-           ret.walkthrough = ret.walkthrough + "SCS_POSIX_BINARY|"
-           ret.wordsize = 16 ' Posix word wordsize unknown
-           ret.code = 7 ' Ambiguous
-          Case 5 'SCS_OS216_BINARY
-           ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
-           ret.desc = " A 16-bit OS/2-based application "
-           ret.walkthrough = ret.walkthrough + "SCS_OS216_BINARY|"
-           ret.wordsize = 16
-           ret.code = 0 ' Success!
-          Case 6 'SCS_64BIT_BINARY
-           ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
-           ret.desc = " A 64-bit Windows-based application. "
-           ret.walkthrough = ret.walkthrough + "SCS_64BIT_BINARY|"
-           ret.wordsize = 64
-           ret.code = 0 ' Success!
-         End Select
-       Else ' However, if we have, say, Windows NT 3.51, then
-        ' WinNT is designed for 32 bits
-        ret.walkthrough = ret.walkthrough + "PE&WinNT3.51|"
-        ret.wordsize = 32
-        ret.code = 0 ' Success!
-       End If
-      End With
-    End Select
-  ElseIf (sh_read = 0) Or (mode = 2) Then ' If EXE cannot be read
-  ret.wordsize = 0
-  ret.walkthrough = ret.walkthrough + "SHGetFileInfo=BAD|"
-  
-  Dim pe_buf As String
-  pe_buf = read_binary_file(AppPath, maxRdLen)
-  
+ Dim params As wordsize_params
+ params = parse_args(args)
  
-  'Dim iFileNo As Integer
-  'iFileNo = FreeFile
-  'Open "C:\Test.txt" For Output As #iFileNo
-  'Print #iFileNo, str2hexarray(pe_buf)
-  'Form1.Text2.Text = str2hexarray(pe_buf)
-  'Close #iFileNo
+ 'MsgBox "Params end code: " + Str(params.code)
+ 'MsgBox "Params M: " + Str(params.mode)
+ 'MsgBox "Params R: " + Str(params.max_read_bytes)
+ 
+ If (params.code <> 0) Then
+  ret.code = params.code
+ Else
+  sh_read = SHGetFileInfo(AppPath, 0, SHFI, Len(SHFI), &H2000)
+   
+  If ((params.mode = 0) And (sh_read > 0)) Or (params.mode = 1) Then ' if can be read, successfully
+   ret.walkthrough = ret.walkthrough + "SHGetFileInfo=OK|"
+   intLoWord = sh_read And &HFFFF&
+   intLoWordHiByte = intLoWord \ &H100 And &HFF&
+   intLoWordLoByte = intLoWord And &HFF&
+   strLOWORD = Chr$(intLoWordLoByte) & Chr$(intLoWordHiByte)
+      
+   Select Case strLOWORD
+    Case "NE", "MZ" ' as far as I can tell,  both NE and MZ are 16bit
+     ret.wordsize = 16
+     ret.walkthrough = ret.walkthrough + "LOWORD:NEMZ|"
+    Case "PE" ' If PE app, gather OS info
+     ret.walkthrough = ret.walkthrough + "LOWORD:PE|"
+     Dim OSV As OSVERSIONINFO
+     With OSV
+      .OSVSize = Len(OSV)
+      GetVersionEx OSV
+      If .PlatformID < 2 Then ' If PE app and Win 9x
+       ret.wordsize = 32
+       ret.walkthrough = ret.walkthrough + "PE&Win9x|"
+      ElseIf .dwVerMajor >= 4 Then ' If PE app and Win NT or higher
+       ret.walkthrough = ret.walkthrough + "PE&WinNT4|"
+       ' Get info via GetBinaryType
+       Dim BinaryType As Long
+       GetBinaryType AppPath, BinaryType
+       Select Case BinaryType
+        Case 0 'SCS_32BIT_BINARY
+         ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
+         ret.desc = " A 32-bit Windows-based application "
+         ret.walkthrough = ret.walkthrough + "SCS_32BIT_BINARY|"
+         ret.wordsize = 32
+         ret.code = 0 ' Success!
+        Case 1 'SCS_DOS_BINARY
+         ' https://users.cs.jmu.edu/abzugcx/Public/Student-Produced-Term-Projects/Operating-Systems-2003-FALL/MS-DOS-by-Dominic-Swayne-Fall-2003.pdf
+         ' First known as 86-DOS, it was developed in about 6 weeks by Tim Paterson of Seattle Computer Products (SCP).  The OS was designed to operate on the company’s own 16-bit personal computers running the Intel 8086 microprocessor.  (Paterson, 1983a)
+         ret.walkthrough = ret.walkthrough + "SCS_DOS_BINARY|"
+         ret.wordsize = 16
+         ret.code = 0 ' Success!
+        Case 2 'SCS_WOW_BINARY
+         ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
+         ret.desc = "A 16-bit Windows-based application"
+         ret.walkthrough = ret.walkthrough + "SCS_WOW_BINARY|"
+         ret.wordsize = 16
+         ret.code = 0 ' Success!
+        Case 3 'SCS_PIF_BINARY
+         ' https://users.cs.jmu.edu/abzugcx/Public/Student-Produced-Term-Projects/Operating-Systems-2003-FALL/MS-DOS-by-Dominic-Swayne-Fall-2003.pdf
+         ' First known as 86-DOS, it was developed in about 6 weeks by Tim Paterson of Seattle Computer Products (SCP).  The OS was designed to operate on the company’s own 16-bit personal computers running the Intel 8086 microprocessor.  (Paterson, 1983a)
+         ret.desc = " A PIF file that executes an MS-DOS – based application "
+         ret.walkthrough = ret.walkthrough + "SCS_PIF_BINARY|"
+         ret.wordsize = 16
+         ret.code = 0 ' Success!
+        Case 4 'SCS_POSIX_BINARY
+         ' https://en.wikipedia.org/wiki/Program_information_file
+         ' ...
+         ' https://stackoverflow.com/q/58986468
+         ret.walkthrough = ret.walkthrough + "SCS_POSIX_BINARY|"
+         ret.wordsize = 32 ' Posix word wordsize unknown
+         ret.code = 7 ' Ambiguous
+        Case 5 'SCS_OS216_BINARY
+         ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
+         ret.desc = " A 16-bit OS/2-based application "
+         ret.walkthrough = ret.walkthrough + "SCS_OS216_BINARY|"
+         ret.wordsize = 16
+         ret.code = 0 ' Success!
+        Case 6 'SCS_64BIT_BINARY
+         ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
+         ret.desc = " A 64-bit Windows-based application. "
+         ret.walkthrough = ret.walkthrough + "SCS_64BIT_BINARY|"
+         ret.wordsize = 64
+         ret.code = 0 ' Success!
+       End Select
+      Else ' However, if we have, say, Windows NT 3.51, then
+       ' WinNT is designed for 32 bits
+       ret.walkthrough = ret.walkthrough + "PE&WinNT3.51|"
+       ret.wordsize = 32
+       ret.code = 0 ' Success!
+      End If
+     End With
+    'End cases
+   End Select
+  ElseIf ((sh_read = 0) And (params.mode = 0)) Or (params.mode = 2) Then ' If EXE cannot be read
+   ret.wordsize = 0
+   ret.walkthrough = ret.walkthrough + "SHGetFileInfo=BAD|"
+   
+   Dim pe_buf As String
+   pe_buf = read_binary_file(AppPath, params.max_read_bytes)
   
-  ' https://superuser.com/questions/358434/how-to-check-if-a-binary-is-32-or-64-bit-on-windows)
-  Dim pe_pos As Long
-  pe_pos = InStr(1, pe_buf, PE_HEADER, vbBinaryCompare)
-
-  If (pe_pos > 0) Then
-   Dim pe_nextbytes As String
-   pe_nextbytes = Mid(pe_buf, pe_pos + Len(PE_HEADER), 2)
-   If (Len(pe_nextbytes)) Then
-    If (StrComp(pe_nextbytes, SIGN32, vbBinaryCompare) = 0) Then
-     ret.wordsize = 32 '
-     ret.walkthrough = ret.walkthrough + "Sign32|"
-    ElseIf (StrComp(pe_nextbytes, SIGN64, vbBinaryCompare) = 0) Then
-     ret.wordsize = 64 '
-     ret.walkthrough = ret.walkthrough + "Sign64|"
-    Else
-     ret.wordsize = 0 '
-     ret.walkthrough = ret.walkthrough + "Sign?? (" + str2hexarray(Mid(pe_buf, pe_pos, 10)) + ") @ " + Hex(pe_pos) + "|"
+   'Dim iFileNo As Integer
+   'iFileNo = FreeFile
+   'Open "C:\Test.txt" For Output As #iFileNo
+   'Print #iFileNo, str2hexarray(pe_buf)
+   'Form1.Text2.Text = str2hexarray(pe_buf)
+   'Close #iFileNo
+   
+   ' https://superuser.com/questions/358434/how-to-check-if-a-binary-is-32-or-64-bit-on-windows)
+   Dim pe_pos As Long
+   pe_pos = InStr(1, pe_buf, PE_HEADER, vbBinaryCompare)
+ 
+   If (pe_pos > 0) Then
+    Dim pe_nextbytes As String
+    pe_nextbytes = Mid(pe_buf, pe_pos + Len(PE_HEADER), 2)
+    If (Len(pe_nextbytes)) Then
+     If (StrComp(pe_nextbytes, SIGN32, vbBinaryCompare) = 0) Then
+      ret.code = 0
+      ret.wordsize = 32 '
+      ret.walkthrough = ret.walkthrough + "Sign32|"
+     ElseIf (StrComp(pe_nextbytes, SIGN64, vbBinaryCompare) = 0) Then
+      ret.code = 0
+      ret.wordsize = 64 '
+      ret.walkthrough = ret.walkthrough + "Sign64|"
+     Else
+      ret.wordsize = 0 '
+      ret.walkthrough = ret.walkthrough + "Sign?? (" + str2hexarray(Mid(pe_buf, pe_pos, 10)) + ") @ " + Hex(pe_pos) + "|"
+      ret.code = ERROR_WARNING_BAD_LUCK
+     End If
     End If
-   End If
-  Else
-   ret.wordsize = 0 ' prefill
-   ret.walkthrough = ret.walkthrough + "NonPE/NonExecutable?|"
-  End If ' If (pe_pos > 0) ...
+   Else
+    ret.wordsize = 0 ' prefill
+    ret.walkthrough = ret.walkthrough + "NonPE/NonExecutable?|"
+    ret.code = ERROR_WARNING_BAD_LUCK
+   End If ' If (pe_pos > 0) ...
+  Else ' invalid mode
+   ret.code = ERROR_INVALID_MODE
+  End If
  End If
  get_wordsize_from_info = ret
 End Function
@@ -339,34 +418,24 @@ End Function
 Public Sub output_err(errMsg As String)
     CLI.Sendln "Error: " & errMsg
 End Sub
-
-Public Sub output_result(ByVal res As Integer, ByVal iError As Integer)
-    If iError = 0 Then
-        CLI.Sendln "Success. The application mode was successfully changed to"
-        'CLI.Sendln Subsys_ret(res)
-    Else
-        output_err get_error_desc(iError)
-    End If
-    
-End Sub
-
-Private Function get_error_desc(iError As Integer) As String
-    Select Case iError
-        Case ERROR_SUCCESS
-            get_error_desc = "Success"
-        
-        Case ERROR_INVALID_ARGS
-            get_error_desc = "Args are invalid"
-        
-        Case ERROR_IRRECOVERABLE
-            get_error_desc = "The program encountered an irrecoverable error"
-        
-        Case ERROR_WARNING_AMBIGUOUS_WORDSIZE
-            get_error_desc = "Success, but the wordsize seems alarmingly ambiguous"
-    End Select
+Private Function get_error_desc(ByRef iError As Long) As String
+ Select Case iError
+  Case ERROR_SUCCESS
+   get_error_desc = "Success"
+  Case ERROR_INVALID_ARGS
+   get_error_desc = "Args are invalid"
+  Case ERROR_INVALID_MODE
+   get_error_desc = "Invalid mode"
+  Case ERROR_IRRECOVERABLE
+   get_error_desc = "The program encountered an irrecoverable error"
+  Case ERROR_WARNING_AMBIGUOUS_WORDSIZE
+   get_error_desc = "Success, but the wordsize seems alarmingly ambiguous"
+  Case ERROR_WARNING_BAD_LUCK
+   get_error_desc = "Fail: No luck analysing"
+ End Select
 End Function
 
-Public Function quit(code As Integer)
+Public Function quit(code As Long)
     On Error Resume Next
 
     CLI.Send vbNewLine
