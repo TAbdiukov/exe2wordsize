@@ -56,7 +56,10 @@ Type wordsize_struct
 End Type
 
 Type wordsize_params
- max_read_bytes As Long
+ ' https://docs.microsoft.com/en-us/office/vba/language/reference/user-interface-help/open-statement
+ ' > Optional. Number less than or equal to 32,767 (bytes)
+ '32,767 = 0x7FFF = max signed 2 bytes var val -> VB6 integer
+ max_read_bytes As Integer
  mode As Long
  code As Long
 End Type
@@ -74,8 +77,9 @@ Private Const ERROR_IRRECOVERABLE = -1
 Private Const ERROR_SUCCESS = 0 ' all good
 Private Const ERROR_INVALID_ARGS = 1 'problem with ARGS
 Private Const ERROR_INVALID_MODE = 2 ' invalid mode
-Private Const ERROR_WARNING_AMBIGUOUS_WORDSIZE = 7
-Private Const ERROR_WARNING_BAD_LUCK = 8
+Private Const ERROR_UNKNOWN_PE_HEADER = 3
+Private Const ERROR_WARNING_AMBIGUOUS_WORDSIZE = 7 ' as 777
+Private Const ERROR_WARNING_BAD_LUCK = 13 ' https://en.wikipedia.org/wiki/13_(number)#Unlucky_13
 
 ' For parse_args
 Private Const ARGS_FLAG_MODE As String = "M"
@@ -186,7 +190,7 @@ Function str2hexarray(s As String, Optional delim As String = " ") As String
  str2hexarray = r
 End Function
 
-Function read_binary_file(path As String, Optional l As Long = 2) As Byte()
+Function read_binary_file(path As String, Optional l As Integer = 2) As Byte()
     Dim nFile As Integer
     Debug.Assert (l > 0)
     
@@ -247,7 +251,7 @@ Function parse_args(s As String, Optional demiliter As String = " ", Optional su
    With ret
     Select Case bbuf
      Case ARGS_FLAG_MAXRDLEN
-      .max_read_bytes = CLng(Trim(b(1)))
+      .max_read_bytes = CInt(Trim(b(1)))
      Case ARGS_FLAG_MODE
       .mode = CLng(Trim(b(1)))
      Case Else
@@ -272,6 +276,8 @@ Function get_wordsize_from_info(AppPath As String, Optional args As String = "")
  Dim intLoWordLoByte As Integer
  Dim strLOWORD   As String
  
+ sh_read = -1
+ 
  Dim ret As wordsize_struct
  struct_prefill ret, AppPath, args
  
@@ -288,7 +294,13 @@ Function get_wordsize_from_info(AppPath As String, Optional args As String = "")
   sh_read = SHGetFileInfo(AppPath, 0, SHFI, Len(SHFI), &H2000)
    
   If ((params.mode = 0) And (sh_read > 0)) Or (params.mode = 1) Then ' if can be read, successfully
-   ret.walkthrough = ret.walkthrough + "SHGetFileInfo=OK|"
+  
+   If (sh_read > 0) Then
+    ret.walkthrough = ret.walkthrough + "SHGetFileInfo=OK|"
+   End If
+    
+   ret.walkthrough = ret.walkthrough + "Mode:WinAPI|"
+   
    intLoWord = sh_read And &HFFFF&
    intLoWordHiByte = intLoWord \ &H100 And &HFF&
    intLoWordLoByte = intLoWord And &HFF&
@@ -343,7 +355,7 @@ Function get_wordsize_from_info(AppPath As String, Optional args As String = "")
          ' ...
          ' https://stackoverflow.com/q/58986468
          ret.walkthrough = ret.walkthrough + "SCS_POSIX_BINARY|"
-         ret.wordsize = 32 ' Posix word wordsize unknown
+         ret.wordsize = 32 ' Posix word wordsize minimal and ambiguous
          ret.code = 7 ' Ambiguous
         Case 5 'SCS_OS216_BINARY
          ' https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getbinarytypew
@@ -369,10 +381,22 @@ Function get_wordsize_from_info(AppPath As String, Optional args As String = "")
    End Select
   ElseIf ((sh_read = 0) And (params.mode = 0)) Or (params.mode = 2) Then ' If EXE cannot be read
    ret.wordsize = 0
-   ret.walkthrough = ret.walkthrough + "SHGetFileInfo=BAD|"
+   If (sh_read = 0) Then
+    ret.walkthrough = ret.walkthrough + "SHGetFileInfo=BAD|"
+   End If
+   
+   ret.walkthrough = ret.walkthrough + "MODE:RAW|"
    
    Dim pe_buf As String
+   Dim pe_buf_len As Long
+   
+   ret.walkthrough = ret.walkthrough + "Reading " + CStr(params.max_read_bytes) + " bytes|"
    pe_buf = read_binary_file(AppPath, params.max_read_bytes)
+   
+   pe_buf_len = Len(pe_buf)
+   If (pe_buf_len <> params.max_read_bytes) Then
+    ret.walkthrough = ret.walkthrough + "Glitchy WinAPI -> read " + CStr(pe_buf_len) + " bytes instead|"
+   End If
   
    'Dim iFileNo As Integer
    'iFileNo = FreeFile
@@ -386,21 +410,23 @@ Function get_wordsize_from_info(AppPath As String, Optional args As String = "")
    pe_pos = InStr(1, pe_buf, PE_HEADER, vbBinaryCompare)
  
    If (pe_pos > 0) Then
+    ret.walkthrough = ret.walkthrough + "PE header found|"
+    
     Dim pe_nextbytes As String
     pe_nextbytes = Mid(pe_buf, pe_pos + Len(PE_HEADER), 2)
     If (Len(pe_nextbytes)) Then
      If (StrComp(pe_nextbytes, SIGN32, vbBinaryCompare) = 0) Then
       ret.code = 0
       ret.wordsize = 32 '
-      ret.walkthrough = ret.walkthrough + "Sign32|"
+      ret.walkthrough = ret.walkthrough + "sign 32 detected|"
      ElseIf (StrComp(pe_nextbytes, SIGN64, vbBinaryCompare) = 0) Then
       ret.code = 0
       ret.wordsize = 64 '
-      ret.walkthrough = ret.walkthrough + "Sign64|"
+      ret.walkthrough = ret.walkthrough + "sign 64 detected|"
      Else
       ret.wordsize = 0 '
-      ret.walkthrough = ret.walkthrough + "Sign?? (" + str2hexarray(Mid(pe_buf, pe_pos, 10)) + ") @ " + Hex(pe_pos) + "|"
-      ret.code = ERROR_WARNING_BAD_LUCK
+      ret.walkthrough = ret.walkthrough + "UNKNOWN (" + str2hexarray(Mid(pe_buf, pe_pos, 10)) + ") @ " + Hex(pe_pos) + "|"
+      ret.code = ERROR_UNKNOWN_PE_HEADER
      End If
     End If
    Else
@@ -426,6 +452,8 @@ Private Function get_error_desc(ByRef iError As Long) As String
    get_error_desc = "Args are invalid"
   Case ERROR_INVALID_MODE
    get_error_desc = "Invalid mode"
+  Case ERROR_UNKNOWN_PE_HEADER
+   get_error_desc = "Unknown PE header"
   Case ERROR_IRRECOVERABLE
    get_error_desc = "The program encountered an irrecoverable error"
   Case ERROR_WARNING_AMBIGUOUS_WORDSIZE

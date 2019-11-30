@@ -177,7 +177,7 @@ Private Sub Form_Load()
   End If
  Else
   showHelp
-  'quit 0
+  quit 0
  End If
 End Sub
 Private Sub showHelp()
