@@ -214,13 +214,13 @@ Private Sub showHelp()
  CLI.Sendln "## 0 - Automatic and flexible (Default)"
  CLI.Sendln "## 1 - Rely only on WinAPI. 64-bit input may be unreliable"
  CLI.Sendln "## 2 - Rely only on raw-reading. Only 32/64-bit detection, false-pos theoretically possible"
- CLI.Sendln "# R=(number) - In raw-reading mode (R=2), how many bytes to read at most for analysis"
+ CLI.Sendln "# R=(number) - In raw-reading mode (M=2), how many bytes to read at most for analysis"
  CLI.Sendln "  (Hint: Only applicable in MODE = 2. Unused in other modes)"
  
  
  CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_BLUE Or CLI.FOREGROUND_INTENSITY
  CLI.Sendln "OUTPUT:"
  CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
- CLI.Sendln "In JSON format"
+ CLI.Sendln "In JSON format, rather straightforward"
 End Sub
 
