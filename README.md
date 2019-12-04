@@ -44,6 +44,22 @@ exe2wordsize "C:/Projects/idk/Project1.exe" * M=2 R=8192
 * R=(number) - In raw-reading mode (`M=2`), how many bytes to read at most for analysis
 (*Hint*: Only applicable in MODE = 2. Unused in other modes)
 
+## How to compile
+1. *[Recommended for compatibility]* Get a Windows XP VM
+2. Get a **Microsoft Visual Basic 6.0** 
+
+***Tip:** I unofficially recommend a portable version sticking around on BT, as you won't have to mess around with the installation and registry. Plus, it's only a few megabytes. Check out **Portable Microsoft Visual Basic 6.0 SP6***
+
+3. Fire up **Microsoft Visual Basic 6.0**, open up the project.
+4. Go to File -> Make *.exe -> Save
+5. Patch the app for CLI use:
+* You can use my [AMC patcher](https://github.com/TAbdiukov/AMC_patcher-CLI). For example,
+	amc C:\Projects\HWZ\hwz.exe 3
+
+* Or you can use the original Nirsoft's [Application Mode Changer](http://www.nirsoft.net/vb/console.zip) ([info](http://www.nirsoft.net/vb/console.html)), unpack the archive and then run the **appmodechange.exe**
+
+6. Done!
+
 ## Found WinAPI bugs
 ### General
 * `SHGetFileInfo` IS buggy on 64-bit executables. Hence `MODE=2` had to be implemented
