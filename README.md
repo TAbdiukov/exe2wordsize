@@ -1,5 +1,5 @@
 # !["|-.-|"](icons8-merge-vertical-64.png) exe2wordsize
-Detects word size the Windows-compatible application was designed for **without running them at any point**
+Detects Windows-compatible application bitness, **without ever running it.**
 
 Uses many WinAPI functions to determine.
 * Ironically, some WinAPI can be buggy, as documented below. The tool takes that into consideration!
@@ -68,8 +68,10 @@ In JSON format,
 5. Patch the app for CLI use:
 * You can use my [AMC patcher](https://github.com/TAbdiukov/AMC_patcher-CLI). For example,
 
+    ```
 	amc C:\Projects\exe2wordsize\exe2wordsize.exe 3
-
+	```
+	
 * Or you can use the original Nirsoft's [Application Mode Changer](http://www.nirsoft.net/vb/console.zip) ([info](http://www.nirsoft.net/vb/console.html)), unpack the archive and then run the **appmodechange.exe**
 
 6. Done!
