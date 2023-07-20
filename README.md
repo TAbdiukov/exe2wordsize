@@ -67,6 +67,7 @@ In JSON format,
 4. Go to File → Make *.exe → Save
 5. Patch the app for CLI use:
 * You can use my [AMC patcher](https://github.com/TAbdiukov/AMC_patcher-CLI). For example,
+
 	amc C:\Projects\exe2wordsize\exe2wordsize.exe 3
 
 * Or you can use the original Nirsoft's [Application Mode Changer](http://www.nirsoft.net/vb/console.zip) ([info](http://www.nirsoft.net/vb/console.html)), unpack the archive and then run the **appmodechange.exe**
