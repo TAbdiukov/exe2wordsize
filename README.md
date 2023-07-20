@@ -72,7 +72,7 @@ In JSON format,
 	amc C:\Projects\exe2wordsize\exe2wordsize.exe 3
 	```
 	
-* Or you can use the original Nirsoft's [Application Mode Changer](http://www.nirsoft.net/vb/console.zip) ([info](http://www.nirsoft.net/vb/console.html)), unpack the archive and then run the **appmodechange.exe**
+* Or you can use the original Nirsoft's [Application Mode Changer](http://www.nirsoft.net/vb/console.zip) ([info](http://www.nirsoft.net/vb/console.html)), unpack the archive and then run **appmodechange.exe**
 
 6. Done!
 
