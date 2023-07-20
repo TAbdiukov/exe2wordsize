@@ -31,6 +31,7 @@ exe2wordsize "C:/Projects/idk/Project1.exe" * M=2 R=8192
 `<path_to_app>` - Path to your executable. `"`-tolerable
 
 `*` - Delimiter. Only required to use optional args.
+
 ----
 
 `<args>` - Optional arguments, space-delimited. Supported args below,
