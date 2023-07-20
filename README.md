@@ -61,7 +61,7 @@ In JSON format,
 1. *[Recommended for compatibility]* Get a Windows XP VM
 2. Get **Microsoft Visual Basic 6.0** 
 
-***Tip:** There is is a portable build, only a few megabytes. Look up <ins>Portable Microsoft Visual Basic 6.0 SP6</ins>
+	* **Tip:** There is is a portable build, only a few megabytes. Look up <ins>Portable Microsoft Visual Basic 6.0 SP6</ins>
 
 3. Start **Microsoft Visual Basic 6.0**, open up the project.
 4. Go to File → Make *.exe → Save
