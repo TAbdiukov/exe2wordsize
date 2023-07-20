@@ -59,20 +59,20 @@ In JSON format,
 
 ## How to compile
 1. *[Recommended for compatibility]* Get a Windows XP VM
-2. Get a **Microsoft Visual Basic 6.0** 
+2. Get **Microsoft Visual Basic 6.0** 
 
-***Tip:** I unofficially recommend a portable version sticking around on BT, as you won't have to mess around with the installation and registry. Plus, it's only a few megabytes. Check out **Portable Microsoft Visual Basic 6.0 SP6***
+***Tip:** There is is a portable build, only a few megabytes. Look up <ins>Portable Microsoft Visual Basic 6.0 SP6</ins>
 
-3. Fire up **Microsoft Visual Basic 6.0**, open up the project.
+3. Start **Microsoft Visual Basic 6.0**, open up the project.
 4. Go to File → Make *.exe → Save
 5. Patch the app for CLI use:
-* You can use my [AMC patcher](https://github.com/TAbdiukov/AMC_patcher-CLI). For example,
+	* You can use my [AMC patcher](https://github.com/TAbdiukov/AMC_patcher-CLI). For example,
 
-    ```
-	amc C:\Projects\exe2wordsize\exe2wordsize.exe 3
-	```
-	
-* Or you can use the original Nirsoft's [Application Mode Changer](http://www.nirsoft.net/vb/console.zip) ([info](http://www.nirsoft.net/vb/console.html)), unpack the archive and then run **appmodechange.exe**
+		```
+		amc C:\Projects\exe2wordsize\exe2wordsize.exe 3
+		```
+		
+	* Or you can use the original Nirsoft's [Application Mode Changer](http://www.nirsoft.net/vb/console.zip) ([docs](http://www.nirsoft.net/vb/console.html)), unpack the archive and then run **appmodechange.exe**
 
 6. Done!
 
