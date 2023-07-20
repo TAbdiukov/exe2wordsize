@@ -1,8 +1,7 @@
 # !["|-.-|"](icons8-merge-vertical-64.png) exe2wordsize
 Detects Windows-compatible application bitness, **without ever running it.**
 
-Uses many WinAPI functions to determine.
-* Ironically, some WinAPI can be buggy, as documented below. The tool takes that into consideration!
+[![Download](https://img.shields.io/badge/download-success?style=for-the-badge&logo=github&logoColor=white)](https://github.com/TAbdiukov/exe2wordsize/releases/download/1.40/exe2wordsize.exe)
 
 ## Assumptions taken
 * **Never runs the executable at any point**
