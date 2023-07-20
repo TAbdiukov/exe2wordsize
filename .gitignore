@@ -2,4 +2,6 @@
 .obj
 *.vbw
 *.OBJ
+*.ex
 Thumbs.db
+*Thumbs.db
