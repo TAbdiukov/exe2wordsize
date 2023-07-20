@@ -64,7 +64,7 @@ Begin VB.Form Form1
       Width           =   4455
    End
    Begin VB.Label Label4 
-      Caption         =   "Argz"
+      Caption         =   "Args"
       Height          =   495
       Left            =   5040
       TabIndex        =   8
@@ -106,10 +106,10 @@ Begin VB.Form Form1
       Width           =   4455
    End
    Begin VB.Label Label1 
-      Caption         =   "IF YOU SEE THIS FORM, YOU HAVENT COMPILED INTO CONSOLE APP AS REQUIRED. GUI BELOW FOR TESTING PURPOSES ONLY"
+      Caption         =   "This GUI for testing purposes only, the app is meant to be patched to run as a CLI app!"
       BeginProperty Font 
-         Name            =   "Comic Sans MS"
-         Size            =   14.25
+         Name            =   "Arial"
+         Size            =   18
          Charset         =   0
          Weight          =   700
          Underline       =   0   'False
@@ -131,7 +131,7 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Private Sub Command1_Click()
- Dim dat  As wordsize_struct
+ Dim dat As wordsize_struct
  
  dat = E2WS.get_wordsize_from_info(Text1.Text, Text4.Text)
  
@@ -150,7 +150,7 @@ Private Sub Form_Load()
  Dim mypath As String
  Text1.Text = E2WS.app_path_exe
  
- Me.Caption = App.EXEName & ": my NES was 128 bit mhmm"
+ Me.Caption = App.EXEName & " v" & VER & ": my NES was 128 bit mhmm"
  
  argt = Trim(Command)
  argw = Split(argt, "*")
@@ -184,43 +184,49 @@ Private Sub showHelp()
  CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_INTENSITY
  CLI.Sendln "exe2wordsize v" + VER
  CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE Or CLI.FOREGROUND_INTENSITY
+
  CLI.Sendln ""
- 
  CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_INTENSITY
  CLI.Sendln "USAGE:"
  CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
  CLI.Sendln "exe2wordsize <path_to_app>"
  CLI.Sendln "exe2wordsize <path_to_app> * <args>"
+
  CLI.Sendln ""
- 
  CLI.SetTextColour CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_INTENSITY
- CLI.Sendln "FOR EXAMPLE:"
+ CLI.Sendln "EXAMPLES:"
  CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
  CLI.Sendln "exe2wordsize " + "C:/Projects/idk/Project1.exe"
  CLI.Sendln "exe2wordsize " + Chr(34) + "C:/Projects/idk/Project1.exe" + Chr(34) + " * M=2 R=8192"
+
+ 
  CLI.Sendln ""
- 
- 
  CLI.SetTextColour CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE Or CLI.FOREGROUND_INTENSITY
  CLI.Sendln "MANUAL:"
  CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
  CLI.Sendln "<path_to_app> - Path to your executable. " + Chr(34) + "-tolerable"
  CLI.Sendln ""
- CLI.Sendln "* - Delimiter required if you use args."
- CLI.Sendln "(Hint: Don't have to use asterick if no args required)"
+ CLI.Sendln "* - Delimiter. Only required to use optional args."
  CLI.Sendln ""
- CLI.Sendln "<args> - Extra arguments, space-delimited. Supported args below,"
- CLI.Sendln "# M=(number) - Set analysis mode. Modes supported,"
+ CLI.Sendln "<args> - Optional arguments, space-delimited. Supported args below,"
+ CLI.Sendln "# M=(number) - Set analysis mode. 3 modes supported,"
  CLI.Sendln "## 0 - Automatic and flexible (Default)"
  CLI.Sendln "## 1 - Rely only on WinAPI. 64-bit input may be unreliable"
- CLI.Sendln "## 2 - Rely only on raw-reading. Only 32/64-bit detection, false-pos theoretically possible"
- CLI.Sendln "# R=(number) - In raw-reading mode (M=2), how many bytes to read at most for analysis"
- CLI.Sendln "  (Hint: Only applicable in MODE = 2. Unused in other modes)"
+ CLI.Sendln "## 2 - Rely only on raw-reading. 32/64-bit detection only"
+ CLI.Sendln "# R=(number) - In raw-reading mode (M=2), how many bytes to read at most"
+ CLI.Sendln "## Hint: Only used in MODE = 2, default 8192"
  
- 
+ CLI.Sendln ""
  CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_BLUE Or CLI.FOREGROUND_INTENSITY
  CLI.Sendln "OUTPUT:"
  CLI.SetTextColour CLI.FOREGROUND_RED Or CLI.FOREGROUND_GREEN Or CLI.FOREGROUND_BLUE
- CLI.Sendln "In JSON format, rather straightforward"
+ CLI.Sendln "In JSON format,"
+ CLI.Sendln "* path: path supplied"
+ CLI.Sendln "* args: arguments supplied"
+ CLI.Sendln "* time: Unix timestamp"
+ CLI.Sendln "* code: (error-)code"
+ CLI.Sendln "* code_desc: (error-)code description"
+ CLI.Sendln "* wordsize: deduced wordsize"
+ CLI.Sendln "* desc: analytical description"
+ CLI.Sendln "* walkthrough: walkthrough process taken"
 End Sub
-
