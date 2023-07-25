@@ -98,5 +98,5 @@ In JSON format,
 
 * [AMC_patcher-CLI](https://github.com/TAbdiukov/AMC_patcher-CLI) – (CLI) Patches app's SUBSYSTEM flag to modify app's behavior.
 * **<ins>exe2wordsize</ins>** – (CLI) Detects Windows-compatible application bitness, without ever running it.
-* [HWZ](https://github.com/TAbdiukov/HWZ) – (CLI) Fast engine to skew (or shear) text by a desired angle, emulating handwriting.
 * [SCAPTURE.EXE](https://github.com/TAbdiukov/SCAPTURE.EXE) – (GUI) Simple screen-capturing tool for embedded systems.
+* [txtShear](https://github.com/TAbdiukov/txtShear) – (CLI) Fast engine to skew (or shear) text by a desired angle, emulating handwriting.
