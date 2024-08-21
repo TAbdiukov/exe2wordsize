@@ -6,7 +6,7 @@ Detects Windows-compatible application bitness, **without ever running it.**
 ## Assumptions taken
 * **Never runs the executable at any point**
 * Host OS can run the application tested (for example, Windows XP, but not Vista, and a DOS app)
-* Minimum byte-size applicable is always returned (for example, 32-bit apps on 64-bit host OS are analysed to use 32-bit word size, even if it is emulated)
+* Minimum byte-size applicable is always returned (for example, 32-bit apps on 64-bit host OS are analyzed to use 32-bit word size, even if it is emulated)
 * WinAPI may be glitchy, hence their output is doubted
 * WinAPI should be versatile
 
@@ -52,7 +52,7 @@ In JSON format,
 * *time*: Unix timestamp
 * *code*: (error-)code
 * *code_desc*: (error-)code description
-* *wordsize*: deduced wordsize
+* *wordsize*: deduced wordsize (bitness)
 * *desc*: analytical description
 * *walkthrough*: walkthrough process taken
 
@@ -60,9 +60,9 @@ In JSON format,
 1. *[Recommended for compatibility]* Get a Windows XP VM
 2. Get **Microsoft Visual Basic 6.0** 
 
-	* **Tip:** There is is a portable build, only a few megabytes. Look up <ins>Portable Microsoft Visual Basic 6.0 SP6</ins>
+	* **Tip:** There is a portable build, only a few megabytes. Look up <ins>Portable Microsoft Visual Basic 6.0 SP6</ins>
 
-3. Start **Microsoft Visual Basic 6.0**, open up the project.
+3. Start **Microsoft Visual Basic 6.0**, open the project.
 4. Go to File → Make *.exe → Save
 5. Patch the app for CLI use:
 	* You can use my [AMC patcher](https://github.com/TAbdiukov/AMC_patcher-CLI). For example,
@@ -75,7 +75,7 @@ In JSON format,
 
 6. Done!
 
-## Found WinAPI bugs
+## Encountered WinAPI bugs/issues
 ### General
 * `SHGetFileInfo` IS buggy on 64-bit executables. Hence `MODE=2` had to be implemented
 * `GetBinaryType` BinaryType IDs are poorly documented
@@ -84,11 +84,11 @@ In JSON format,
 * For binary reading, `InputB` returns some patterned gibberish, despite documentation online. Use `Input` instead
 
 ### Other
-* No easy way in Visual Basic 6 to pass args → worked around using `*` delimiter.
+* No straightforward way in Visual Basic 6 to parse arguments → worked around using `*` delimiter.
 
 ## Acknowledgements
 
-* Merge Vertical icon icon by [Icons8](https://icons8.com)
+* Merge Vertical icon by [Icons8](https://icons8.com)
     * Although I have their subscription, better safe than sorry
 
 * Much of useful online documentation chained together!
