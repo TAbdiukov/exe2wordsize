@@ -2,7 +2,7 @@
 Detects Windows-compatible application bitness, **without ever running it.**
 
 [![Download](https://img.shields.io/badge/download-success?style=for-the-badge&logo=github&logoColor=white)](https://github.com/TAbdiukov/exe2wordsize/releases/download/1.40/exe2wordsize.exe)
-![License](https://img.shields.io/github/license/TAbdiukov/exe2wordsize)
+![License](https://img.shields.io/github/license/TAbdiukov/exe2wordsize?style=for-the-badge)
 [![PlanetaSofta](https://img.shields.io/badge/PlanetaSofta-ff0022?style=for-the-badge&logo=PlanetScale&logoColor=FFFFFF)](https://planetasofta.ru/windows/other-programming-files/exe2wordsize)
 [![Softpedia](https://img.shields.io/badge/Softpedia-002873?style=for-the-badge&logo=Softpedia&logoColor=FFFFFF)](https://www.softpedia.com/get/Programming/Other-Programming-Files/exe2wordsize.shtml)
 
