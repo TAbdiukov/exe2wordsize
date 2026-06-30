@@ -2,6 +2,9 @@
 Detects Windows-compatible application bitness, **without ever running it.**
 
 [![Download](https://img.shields.io/badge/download-success?style=for-the-badge&logo=github&logoColor=white)](https://github.com/TAbdiukov/exe2wordsize/releases/download/1.40/exe2wordsize.exe)
+[![Softpedia](https://img.shields.io/badge/Softpedia-002873?style=for-the-badge&logo=Softpedia&logoColor=FFFFFF)](https://www.softpedia.com/get/Programming/Other-Programming-Files/exe2wordsize.shtml)
+
+[![buymeacoffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/tabdiukov)
 
 ## Assumptions taken
 * **Never runs the executable at any point**
